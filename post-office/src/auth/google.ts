@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
 import { shell } from "electron";
-import { loadRefreshToken, saveRefreshToken } from "./tokenStorage";
+import { loadRefreshToken, saveRefreshToken, deleteRefreshToken } from "./tokenStorage";
 
 
 const SCOPES = [
@@ -122,6 +122,11 @@ export async function signInWithGoogle() {
   oauth2Client.setCredentials(tokens)
 
   return tokens;
+}
+
+export async function signOutWithGoogle(){
+  deleteRefreshToken();
+  console.log("Signed out with Google")
 }
 
 export async function getAuthenticatedClient() {

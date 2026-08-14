@@ -35,3 +35,11 @@ export function loadRefreshToken(): string | null {
 
   return safeStorage.decryptString(encryptedToken);
 }
+
+export function deleteRefreshToken(){
+  if (fs.existsSync(TOKEN_PATH)){
+    fs.unlinkSync(TOKEN_PATH);
+  }
+
+  console.log("Refresh token deleted");
+}

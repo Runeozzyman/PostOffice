@@ -8,5 +8,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   checkAuth: () =>
     ipcRenderer.invoke("check-auth"),
+
+  signOut: () =>
+    ipcRenderer.invoke("google-sign-out"),  
   
 });

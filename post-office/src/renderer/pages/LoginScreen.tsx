@@ -1,17 +1,16 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
-interface LoginScreenProps {
-	onSignIn: () => void;
-}
+  const LoginScreen = () =>  {
 
-  const LoginScreen = ({onSignIn}: LoginScreenProps) =>  {
+    const {signIn} = useAuth();
 
 	return (
 	  <div>
         <h1>Welcome to Post Office</h1>
 
         <button
-          onClick={onSignIn}
+          onClick={signIn}
         >
           Sign in with Google
         </button>

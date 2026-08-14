@@ -7,6 +7,7 @@ declare global{
         electronAPI: {
             signInWithGoogle: () => Promise<Void>
             checkAuth: () => Promise<boolean>
+            signOut: () => Promise<boolean>;
         }
     }
 }

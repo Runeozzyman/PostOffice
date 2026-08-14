@@ -1,31 +1,10 @@
 import { useEffect, useState } from "react";
 import LoginScreen from "./pages/LoginScreen";
 import HomePage from "./pages/HomePage";
+import { useAuth } from "./context/AuthContext";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-  //sign-in method passed into LoginScreen component
-  const handleSignIn = async () => {
-    try {
-      await window.electronAPI.signInWithGoogle();
-
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error("Google sign-in failed:", error);
-    }
-  };
-
-  //check once on mount if user auth creds are already stored
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      const authenticated = await window.electronAPI.checkAuth();
-
-      setIsAuthenticated(authenticated);
-    };
-
-    checkAuthentication();
-  }, []);
+  const {isAuthenticated} = useAuth();
 
   if (isAuthenticated === null) {
     return <h1>Loading...</h1>;
@@ -33,7 +12,7 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <LoginScreen onSignIn={handleSignIn}/>
+      <LoginScreen />
     );
   }
 
