@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getAuthenticatedClient,signInWithGoogle, signOutWithGoogle } from "../auth/google";
+import { fetchRecentEmails } from "../services/gmailSync";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,10 @@ const createWindow = () => {
 
   window.loadURL("http://localhost:5173");
 };
+
+ipcMain.handle("fetch-emails", async () =>{
+  return await fetchRecentEmails();
+});
 
 ipcMain.handle("google-sign-out", async () =>{
   signOutWithGoogle();

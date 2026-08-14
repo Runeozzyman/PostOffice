@@ -8,6 +8,7 @@ declare global{
             signInWithGoogle: () => Promise<Void>
             checkAuth: () => Promise<boolean>
             signOut: () => Promise<boolean>;
+            fetchEmails: () => Promise<any[]>
         }
     }
 }

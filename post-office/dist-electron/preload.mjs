@@ -4,6 +4,7 @@ console.log("PRELOAD SCRIPT LOADED");
 electron.contextBridge.exposeInMainWorld("electronAPI", {
 	signInWithGoogle: () => electron.ipcRenderer.invoke("google-sign-in"),
 	checkAuth: () => electron.ipcRenderer.invoke("check-auth"),
-	signOut: () => electron.ipcRenderer.invoke("google-sign-out")
+	signOut: () => electron.ipcRenderer.invoke("google-sign-out"),
+	fetchEmails: () => electron.ipcRenderer.invoke("fetch-emails")
 });
 //#endregion

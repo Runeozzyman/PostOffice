@@ -11,5 +11,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   signOut: () =>
     ipcRenderer.invoke("google-sign-out"),  
-  
+
+  fetchEmails: () =>
+    ipcRenderer.invoke("fetch-emails"),
+
 });
