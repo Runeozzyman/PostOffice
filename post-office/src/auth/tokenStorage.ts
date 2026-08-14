@@ -33,7 +33,5 @@ export function loadRefreshToken(): string | null {
 
   const encryptedToken = fs.readFileSync(TOKEN_PATH);
 
-  console.log("Refresh token loaded from:", TOKEN_PATH)
-
   return safeStorage.decryptString(encryptedToken);
 }

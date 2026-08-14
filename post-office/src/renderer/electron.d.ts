@@ -1,3 +1,5 @@
+//Add all IPC methods here for type declarations
+
 export {};
 
 declare global{

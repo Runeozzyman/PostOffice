@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import LoginScreen from "./pages/LoginScreen";
+import HomePage from "./pages/HomePage";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
+  //sign-in method passed into LoginScreen component
   const handleSignIn = async () => {
     try {
       await window.electronAPI.signInWithGoogle();
@@ -13,6 +16,7 @@ function App() {
     }
   };
 
+  //check once on mount if user auth creds are already stored
   useEffect(() => {
     const checkAuthentication = async () => {
       const authenticated = await window.electronAPI.checkAuth();
@@ -29,23 +33,12 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <div>
-        <h1>Welcome to Post Office</h1>
-
-        <button
-          onClick={handleSignIn}
-        >
-          Sign in with Google
-        </button>
-      </div>
+      <LoginScreen onSignIn={handleSignIn}/>
     );
   }
 
   return (
-    <div>
-      <h1>Welcome back! 📬</h1>
-      <p>You are already authenticated.</p>
-    </div>
+    <HomePage />
   );
 }
 

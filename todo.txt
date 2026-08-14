@@ -1,0 +1,3 @@
+(A) 2026-08-15 Implement method to perform a full email sync (pull all emails) @google.ts
+(B) 2026-08-15 Implement page/components to display pulled emails in electron @renderer
+
