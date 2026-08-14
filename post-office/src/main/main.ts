@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { signInWithGoogle } from "../auth/google";
+import { getAuthenticatedClient,signInWithGoogle } from "../auth/google";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +21,12 @@ const createWindow = () => {
 
   window.loadURL("http://localhost:5173");
 };
+
+ipcMain.handle("check-auth", async () =>{
+  const auth = await getAuthenticatedClient();
+
+  return auth !== null;
+})
 
 ipcMain.handle("google-sign-in", async () => {
   return await signInWithGoogle();

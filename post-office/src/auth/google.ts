@@ -3,6 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
 import { shell } from "electron";
+import { loadRefreshToken, saveRefreshToken } from "./tokenStorage";
+
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
@@ -113,7 +115,36 @@ export async function signInWithGoogle() {
   console.log("Tokens received")
   console.log(tokens)
 
+  if(tokens.refresh_token){
+    saveRefreshToken(tokens.refresh_token);
+  }
+
   oauth2Client.setCredentials(tokens)
 
   return tokens;
+}
+
+export async function getAuthenticatedClient() {
+  const refreshToken = loadRefreshToken();
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  const credentials = JSON.parse(
+    fs.readFileSync(CREDENTIALS_PATH, "utf-8")
+  );
+
+  const { client_id, client_secret } = credentials.installed;
+
+  const oauth2Client = new google.auth.OAuth2(
+    client_id,
+    client_secret
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: refreshToken,
+  });
+
+  return oauth2Client;
 }
