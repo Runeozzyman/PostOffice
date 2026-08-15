@@ -1,4 +1,6 @@
 (A) 2026-08-13 Implement page/components to display pulled emails in electron @renderer
+(B) 2026-08-15 Allow user to create 'mailslots'
+(B) 2026 08-15 Implement collapsible side bar component
 
 ------------------------------------------------------------------------------------------------------
 
