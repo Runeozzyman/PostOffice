@@ -15,7 +15,9 @@ import { useEffect } from 'react';
 
 	return (
 	  <div>
-      <h1>Welcome back! 📬</h1>
+      <h1 className='text-red-500'>
+        Welcome back! 📬
+      </h1>
       <p>You are already authenticated.</p>
       <SignOutButton />
     </div>
