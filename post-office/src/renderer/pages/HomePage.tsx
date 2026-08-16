@@ -1,8 +1,18 @@
 import React from 'react';
-import SignOutButton from '../components/SignOutButton';
-import { useEffect } from 'react';
+import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
+
+import Inbox from './Inbox';
+import Mailslots from './Mailslots';
+import Settings from './Settings';
+import Starred from './Starred';
+import Sent from './Sent';
+
+import { useEffect, useState } from 'react';
   
   const HomePage = () =>  {
+
+    const [currentPage, setCurrentPage]  = useState("mailslots")
 
     useEffect(() =>{
       const loadEmails = async () =>{
@@ -14,14 +24,18 @@ import { useEffect } from 'react';
     }, []);
 
 	return (
-	  <div>
-      <h1 className='text-red-500'>
-        Welcome back! 📬
-      </h1>
-      <p>You are already authenticated.</p>
-      <SignOutButton />
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar setCurrentPage={setCurrentPage}/>
+
+      <main className="flex-1">
+        {currentPage === "mailslots" && <Mailslots />}
+        {currentPage === "inbox" && <Inbox />}
+        {currentPage === "starred" && <Starred />}
+        {currentPage === "sent" && <Sent />}
+        {currentPage === "settings" && <Settings />}
+      </main>
     </div>
-	);
+  );
   }
   
   export default HomePage;
