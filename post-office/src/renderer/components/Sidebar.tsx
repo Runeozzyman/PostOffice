@@ -39,7 +39,7 @@ const Sidebar = ({setCurrentPage}: SidebarProps) => {
         ${collapsed ? "opacity-0" : "opacity-100"}
       `}
     >
-      Post Office
+      PostOffice
     </h1>
   </div>
 
