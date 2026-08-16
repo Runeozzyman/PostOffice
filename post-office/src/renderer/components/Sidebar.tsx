@@ -6,6 +6,7 @@ import {
   FiSettings,
   FiChevronLeft,
   FiChevronRight,
+  FiMail,
 } from "react-icons/fi";
 
 interface SidebarProps {
@@ -64,6 +65,13 @@ const Sidebar = ({setCurrentPage}: SidebarProps) => {
 
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
+
+        <SidebarItem
+          icon={<FiMail size={18} />}
+          label="Mailslots"
+          collapsed={collapsed}
+          onClick={() => setCurrentPage("mailslots")}
+        />
 
         <SidebarItem
           icon={<FiInbox size={18} />}
