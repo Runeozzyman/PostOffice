@@ -1,5 +1,7 @@
 (A) 2026-08-13 Implement page/components to display pulled emails in electron @renderer
+(A) 2026-08-15 Create SQLite database to store user data locally (mailslots, emails,etc)
 (B) 2026-08-15 Allow user to create 'mailslots'
+
 
 ------------------------------------------------------------------------------------------------------
 
