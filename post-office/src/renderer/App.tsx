@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import LoginScreen from "./pages/LoginScreen";
 import HomePage from "./pages/HomePage";
 import { useAuth } from "./context/AuthContext";

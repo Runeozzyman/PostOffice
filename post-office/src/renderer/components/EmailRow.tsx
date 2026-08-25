@@ -3,6 +3,8 @@ import { formatListDate } from "../../helpers/formatListDate";
 
 interface EmailRowProps {
   email: Email;
+  onOpen: (email: Email) => void;
+  animationIndex?: number;
 }
 
 function displayName(from: string) {
@@ -11,9 +13,27 @@ function displayName(from: string) {
 }
 
 
-export default function EmailRow({ email }: EmailRowProps) {
+export default function EmailRow({
+  email,
+  onOpen,
+  animationIndex = 0,
+}: EmailRowProps) {
   return (
-    <article className="flex items-baseline gap-4 px-4 py-3 border-b border-gray-200 hover:bg-gray-50">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(email)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen(email);
+        }
+      }}
+      style={{
+        animationDelay: `${Math.min(animationIndex, 16) * 28}ms`,
+      }}
+      className="email-row-pop flex cursor-pointer items-baseline gap-4 px-4 py-3 border-b border-gray-200 hover:bg-gray-50"
+    >
       <span className="w-40 shrink-0 truncate text-sm font-medium text-gray-900">
         {displayName(email.from)}
       </span>

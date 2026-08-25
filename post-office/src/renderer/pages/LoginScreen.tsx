@@ -1,7 +1,5 @@
-import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { FcGoogle } from "react-icons/fc";
-import Header from '../components/Header';
 
   const LoginScreen = () =>  {
 
