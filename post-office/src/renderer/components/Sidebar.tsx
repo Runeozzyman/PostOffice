@@ -19,7 +19,7 @@ const Sidebar = ({setCurrentPage}: SidebarProps) => {
   return (
     <aside
     className={`
-        h-screen
+        h-screen shrink 0
         border-r border-gray-200
         bg-white
         flex flex-col
