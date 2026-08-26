@@ -24,6 +24,13 @@ declare global {
       getEmail: (id: string) => Promise<EmailDetail | null>;
       trashEmail: (id: string) => Promise<boolean>;
       untrashEmail: (id: string) => Promise<boolean>;
+      sendEmail: (payload: {
+        to: string;
+        cc?: string;
+        bcc?: string;
+        subject: string;
+        body: string;
+      }) => Promise<boolean>;
       listMailslots: () => Promise<Mailslot[]>;
       createMailslot: (payload: {
         title: string;

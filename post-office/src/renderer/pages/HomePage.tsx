@@ -1,4 +1,5 @@
 import Sidebar from "../components/Sidebar";
+import ComposeWindow from "../components/ComposeWindow";
 
 import Inbox from "./Inbox";
 import Mailslots from "./Mailslots";
@@ -15,7 +16,7 @@ const HomePage = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-page">
       <Sidebar setCurrentPage={setCurrentPage} />
-      <main className="min-w-0 flex-1 overflow-hidden">
+      <main className="relative min-w-0 flex-1 overflow-hidden">
         <div
           className={
             currentPage === "inbox" ? "h-full min-w-0" : "hidden"
@@ -54,6 +55,7 @@ const HomePage = () => {
             <Settings />
           </div>
         )}
+        <ComposeWindow />
       </main>
     </div>
   );

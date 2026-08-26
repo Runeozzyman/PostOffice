@@ -1,3 +1,4 @@
+import { ComposeProvider } from "./context/ComposeContext";
 import LoginScreen from "./pages/LoginScreen";
 import HomePage from "./pages/HomePage";
 import { useAuth } from "./context/AuthContext";
@@ -18,7 +19,9 @@ function App() {
   }
 
   return (
-    <HomePage />
+    <ComposeProvider>
+      <HomePage />
+    </ComposeProvider>
   );
 }
 

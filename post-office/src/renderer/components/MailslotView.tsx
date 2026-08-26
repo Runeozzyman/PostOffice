@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FiEdit2 } from "react-icons/fi";
 import type { Mailslot } from "../../types/mailslot";
 import { mailslotIcon } from "../helpers/mailslotOptions";
+import ComposeButton from "./ComposeButton";
 import EmailListPanel from "./EmailListPanel";
 import MailslotEditorModal from "./MailslotEditorModal";
 
@@ -48,6 +49,7 @@ export default function MailslotView({
           <FiEdit2 size={14} />
           Edit
         </button>
+        <ComposeButton />
       </div>
 
       <div className="min-h-0 flex-1">

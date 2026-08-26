@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ComposeButton from "../components/ComposeButton";
 import EmailListPanel from "../components/EmailListPanel";
 
 export default function Inbox() {
@@ -37,7 +38,8 @@ export default function Inbox() {
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
       <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
-        <h1 className="text-lg font-semibold text-ink">Inbox</h1>
+        <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Inbox</h1>
+        <ComposeButton />
       </div>
       {error && (
         <p className="shrink-0 px-4 py-2 text-sm text-danger">{error}</p>

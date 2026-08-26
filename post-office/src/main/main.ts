@@ -15,6 +15,7 @@ import {
   signInWithGoogle,
   signOutWithGoogle,
 } from "../auth/google";
+import { sendGmailMessage } from "../services/gmailSend";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
@@ -189,6 +190,17 @@ ipcMain.handle("untrash-email", async (_event, id: string) => {
   await untrashGmailMessage(id);
   return true;
 });
+
+ipcMain.handle(
+  "send-email",
+  async (
+    _event,
+    payload: { to: string; cc?: string; bcc?: string; subject: string; body: string }
+  ) => {
+    await sendGmailMessage(payload);
+    return true;
+  }
+);
 
 ipcMain.handle(
   "save-attachment",

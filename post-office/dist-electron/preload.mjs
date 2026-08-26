@@ -35,6 +35,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 	getEmail: (id) => electron.ipcRenderer.invoke("get-email", id),
 	trashEmail: (id) => electron.ipcRenderer.invoke("trash-email", id),
 	untrashEmail: (id) => electron.ipcRenderer.invoke("untrash-email", id),
+	sendEmail: (payload) => electron.ipcRenderer.invoke("send-email", payload),
 	saveAttachment: (payload) => electron.ipcRenderer.invoke("save-attachment", payload)
 });
 //#endregion

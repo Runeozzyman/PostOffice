@@ -99,6 +99,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   untrashEmail: (id: string): Promise<boolean> =>
     ipcRenderer.invoke("untrash-email", id),
 
+  sendEmail: (payload: {
+    to: string;
+    cc?: string;
+    bcc?: string;
+    subject: string;
+    body: string;
+  }): Promise<boolean> => ipcRenderer.invoke("send-email", payload),
+
   saveAttachment: (payload: {
     messageId: string;
     attachmentId: string;
