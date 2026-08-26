@@ -23,40 +23,31 @@ export default function MailslotView({
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-white">
-      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
         <button
           type="button"
           onClick={onBack}
-          className="mb-3 text-sm text-gray-600 hover:text-gray-900"
+          className="mr-3 shrink-0 text-sm text-gray-600 hover:text-gray-900"
         >
-          Back to mailslots
+          Back
         </button>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white"
-              style={{ backgroundColor: mailslot.color }}
-            >
-              <Icon size={20} />
-            </span>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold text-gray-900">
-                {mailslot.title}
-              </h1>
-              <p className="text-sm text-gray-500">
-                Mail matching this slot’s rules.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <FiEdit2 size={14} />
-            Edit
-          </button>
-        </div>
+        <span
+          className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
+          style={{ backgroundColor: mailslot.color }}
+        >
+          <Icon size={16} />
+        </span>
+        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-gray-900">
+          {mailslot.title}
+        </h1>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          <FiEdit2 size={14} />
+          Edit
+        </button>
       </div>
 
       <div className="min-h-0 flex-1">

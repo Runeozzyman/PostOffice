@@ -35,7 +35,10 @@ export default function Inbox() {
   }, []);
 
   return (
-    <div className="flex h-full min-w-0 flex-col">
+    <div className="flex h-full min-w-0 flex-col bg-white">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
+        <h1 className="text-lg font-semibold text-gray-900">Inbox</h1>
+      </div>
       {error && (
         <p className="shrink-0 px-4 py-2 text-sm text-red-600">{error}</p>
       )}

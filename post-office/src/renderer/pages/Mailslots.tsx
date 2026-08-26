@@ -49,11 +49,8 @@ export default function Mailslots() {
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-gray-50">
-      <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-4">
         <h1 className="text-lg font-semibold text-gray-900">Mailslots</h1>
-        <p className="text-sm text-gray-500">
-          Separate inboxes you can open at a glance.
-        </p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-6">

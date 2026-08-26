@@ -41,7 +41,11 @@ const HomePage = () => {
         >
           <Sent />
         </div>
-        {currentPage === "settings" && <Settings />}
+        {currentPage === "settings" && (
+          <div className="h-full min-w-0">
+            <Settings />
+          </div>
+        )}
       </main>
     </div>
   );

@@ -45,18 +45,20 @@ export default function EmailDetail({ email, onBack }: EmailDetailProps) {
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-white">
-      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
+      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-gray-200 px-4">
         <button
           type="button"
           onClick={onBack}
-          className="mb-3 text-sm text-gray-600 hover:text-gray-900 hover:cursor-pointer"
+          className="shrink-0 text-sm text-gray-600 hover:cursor-pointer hover:text-gray-900"
         >
-          Back to inbox
+          Back
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">
+        <h1 className="min-w-0 truncate text-lg font-semibold text-gray-900">
           {email.subject || "(no subject)"}
         </h1>
-        <p className="mt-1 text-sm text-gray-700">{email.from}</p>
+      </div>
+      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
+        <p className="text-sm text-gray-700">{email.from}</p>
         <p className="text-sm text-gray-500">To: {email.to || "—"}</p>
         <p className="text-xs text-gray-500">{formatListDate(email.date)}</p>
       </div>

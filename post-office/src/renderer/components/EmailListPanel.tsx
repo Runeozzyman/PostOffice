@@ -173,7 +173,7 @@ export default function EmailListPanel({
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-white">
-      <div className="shrink-0 border-b border-gray-200 px-4 py-3">
+      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
         <input
           type="search"
           value={searchInput}
