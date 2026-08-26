@@ -1,19 +1,17 @@
 import { useAuth } from "../context/AuthContext";
 
-const SignOutButton = () =>{
+const SignOutButton = () => {
+  const { signOut } = useAuth();
 
-    const {signOut} = useAuth();
-
-    return(
-        <div>
-            <button 
-                onClick={signOut}
-                className="hover:bg-gray-500 p-1 border border-red-500 rounded transition duration-100"
-            >
-                Sign Out
-            </button>
-        </div>
-    )
-}
+  return (
+    <button
+      type="button"
+      onClick={signOut}
+      className="shrink-0 rounded-md border border-danger px-3 py-1.5 text-sm font-medium text-danger transition-colors hover:bg-danger-soft hover:cursor-pointer"
+    >
+      Sign out
+    </button>
+  );
+};
 
 export default SignOutButton;

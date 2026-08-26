@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>post-office</title>
+    <script>
+      try {
+        if (localStorage.getItem("postoffice.theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (error) {
+        // Theme will be applied after React loads.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

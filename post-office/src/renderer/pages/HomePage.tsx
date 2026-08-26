@@ -12,7 +12,7 @@ const HomePage = () => {
   const [currentPage, setCurrentPage] = useState("mailslots");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-page">
       <Sidebar setCurrentPage={setCurrentPage} />
       <main className="min-w-0 flex-1 overflow-hidden">
         <div

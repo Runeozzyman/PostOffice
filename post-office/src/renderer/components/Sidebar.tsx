@@ -10,62 +10,59 @@ import {
 } from "react-icons/fi";
 
 interface SidebarProps {
-    setCurrentPage: (page: string) => void 
+  setCurrentPage: (page: string) => void;
 }
 
-const Sidebar = ({setCurrentPage}: SidebarProps) => {
+const Sidebar = ({ setCurrentPage }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
-    className={`
+      className={`
         h-screen shrink-0
-        border-r border-gray-200
-        bg-white
+        border-r border-line
+        bg-surface
         flex flex-col
         overflow-hidden
         transition-all duration-200
         ${collapsed ? "w-16" : "w-64"}
     `}
     >
-      {/* Header */}
-      <div className="h-16 flex items-center border-b border-gray-200 px-4">
-  <div className="flex-1 min-w-0 overflow-hidden">
-    <h1
-      className={`
-        text-lg font-semibold text-gray-900
+      <div className="flex h-16 items-center border-b border-line px-4">
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <h1
+            className={`
+        text-lg font-semibold text-ink
         whitespace-nowrap
         transition-opacity duration-100
         ${collapsed ? "opacity-0" : "opacity-100"}
       `}
-    >
-      PostOffice
-    </h1>
-  </div>
+          >
+            PostOffice
+          </h1>
+        </div>
 
-  <button
-    onClick={() => setCollapsed(!collapsed)}
-    className="
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="
       shrink-0
       p-2
       rounded-md
-      text-gray-500
-      hover:bg-gray-100
-      hover:text-gray-900
+      text-ink-muted
+      hover:bg-hover
+      hover:text-ink
       transition-colors
     "
-  >
-    {collapsed ? (
-      <FiChevronRight size={18} />
-    ) : (
-      <FiChevronLeft size={18} />
-    )}
-  </button>
-</div>
+        >
+          {collapsed ? (
+            <FiChevronRight size={18} />
+          ) : (
+            <FiChevronLeft size={18} />
+          )}
+        </button>
+      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1">
-
+      <nav className="flex-1 space-y-1 p-3">
         <SidebarItem
           icon={<FiMail size={18} />}
           label="Mailslots"
@@ -84,25 +81,29 @@ const Sidebar = ({setCurrentPage}: SidebarProps) => {
           icon={<FiStar size={18} />}
           label="Starred"
           collapsed={collapsed}
-          onClick={() =>{setCurrentPage("starred")}}
+          onClick={() => {
+            setCurrentPage("starred");
+          }}
         />
 
         <SidebarItem
           icon={<FiSend size={18} />}
           label="Sent"
           collapsed={collapsed}
-          onClick={() =>{setCurrentPage("sent")}}
+          onClick={() => {
+            setCurrentPage("sent");
+          }}
         />
-
       </nav>
 
-      {/* Bottom */}
-      <div className="p-3 border-t border-gray-200">
+      <div className="border-t border-line p-3">
         <SidebarItem
           icon={<FiSettings size={18} />}
           label="Settings"
           collapsed={collapsed}
-          onClick={() =>{setCurrentPage("settings")}}
+          onClick={() => {
+            setCurrentPage("settings");
+          }}
         />
       </div>
     </aside>
@@ -132,15 +133,14 @@ const SidebarItem = ({
         px-3 py-2
         rounded-md
         text-sm
-        text-gray-600
-        hover:bg-gray-100
-        hover:text-gray-900
+        text-ink-secondary
+        hover:bg-hover
+        hover:text-ink
         transition-colors
+        hover:cursor-pointer
       "
     >
-      <span className="shrink-0">
-        {icon}
-      </span>
+      <span className="shrink-0">{icon}</span>
 
       <span
         className={`

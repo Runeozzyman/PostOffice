@@ -113,18 +113,18 @@ export default function EmailRow({
         borderLeft: color ? `4px solid ${color}` : undefined,
         backgroundColor: color ? `${color}14` : undefined,
       }}
-      className="email-row-pop flex cursor-pointer items-baseline gap-4 px-4 py-3 border-b border-gray-200 hover:bg-gray-50"
+      className="email-row-pop flex cursor-pointer items-baseline gap-4 border-b border-line px-4 py-3 hover:bg-hover"
     >
-      <span className="w-40 shrink-0 truncate text-sm font-medium text-gray-900">
+      <span className="w-40 shrink-0 truncate text-sm font-medium text-ink">
         {mailbox === "sent"
           ? displayAddress(email.to) || email.to
           : displayAddress(email.from)}
       </span>
       <div className="min-w-0 flex-1 truncate text-sm">
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-ink">
           {email.subject || "(no subject)"}
         </span>
-        <span className="text-gray-500"> — {email.snippet}</span>
+        <span className="text-ink-muted"> — {email.snippet}</span>
       </div>
       {showMailslotColor && email.mailslotTitle && (
         <span
@@ -134,7 +134,7 @@ export default function EmailRow({
           {email.mailslotTitle}
         </span>
       )}
-      <time className="shrink-0 text-xs text-gray-500">
+      <time className="shrink-0 text-xs text-ink-muted">
         {formatListDate(email.date)}
       </time>
       <div className="relative shrink-0">
@@ -147,7 +147,7 @@ export default function EmailRow({
             event.stopPropagation();
             setMenuOpen((open) => !open);
           }}
-          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          className="rounded-md p-1 text-ink-subtle hover:bg-hover hover:text-ink-secondary"
         >
           <FiMoreHorizontal size={16} />
         </button>

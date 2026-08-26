@@ -22,12 +22,12 @@ export default function MailslotView({
   const Icon = mailslotIcon(mailslot.icon);
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-white">
-      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
+    <div className="flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
         <button
           type="button"
           onClick={onBack}
-          className="mr-3 shrink-0 text-sm text-gray-600 hover:text-gray-900"
+          className="mr-3 shrink-0 text-sm text-ink-secondary hover:text-ink"
         >
           Back
         </button>
@@ -37,13 +37,13 @@ export default function MailslotView({
         >
           <Icon size={16} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-gray-900">
+        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
           {mailslot.title}
         </h1>
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
         >
           <FiEdit2 size={14} />
           Edit

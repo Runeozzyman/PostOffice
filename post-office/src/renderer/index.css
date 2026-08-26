@@ -1,13 +1,81 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-ink-faint: var(--ink-faint);
+  --color-on-ink: var(--on-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+}
+
+:root {
+  color-scheme: light;
+  --page: #e6e2db;
+  --surface: #f2efe8;
+  --muted: #ebe7e0;
+  --hover: #e3dfd7;
+  --line: #d8d2c8;
+  --line-strong: #c9c2b6;
+  --ink: #111827;
+  --ink-secondary: #4b5563;
+  --ink-muted: #6b7280;
+  --ink-subtle: #9ca3af;
+  --ink-faint: #d1d5db;
+  --on-ink: #f2efe8;
+  --danger: #dc2626;
+  --danger-soft: #f4ece6;
+}
+
+html.dark {
+  color-scheme: dark;
+  --page: #12151a;
+  --surface: #1a1f27;
+  --muted: #151a21;
+  --hover: #252b35;
+  --line: #2c3440;
+  --line-strong: #3d4654;
+  --ink: #c5c9d1;
+  --ink-secondary: #a7adb7;
+  --ink-muted: #8b919c;
+  --ink-subtle: #6f7580;
+  --ink-faint: #4b5563;
+  --on-ink: #1a1f27;
+  --danger: #f87171;
+  --danger-soft: #3a1f22;
+}
+
+html.theme-transition,
+html.theme-transition *:not(iframe) {
+  transition-property: background-color, color, border-color, fill, stroke,
+    box-shadow;
+  transition-duration: 280ms;
+  transition-timing-function: ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *:not(iframe) {
+    transition: none;
+  }
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color: #1f2937;
-  background-color: #f0ecec;
-
+  color: var(--ink);
+  background-color: var(--page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,6 +89,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--page);
+  color: var(--ink);
 }
 
 button {
@@ -47,30 +117,4 @@ button {
   .mailslot-pop {
     animation: email-pop-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-}
-
-.color-hue-slider {
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.color-hue-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 9999px;
-  background: white;
-  border: 2px solid #111827;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
-  cursor: pointer;
-}
-
-.color-hue-slider::-moz-range-thumb {
-  height: 16px;
-  width: 16px;
-  border-radius: 9999px;
-  background: white;
-  border: 2px solid #111827;
-  cursor: pointer;
 }

@@ -114,19 +114,19 @@ export default function MailslotEditorModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-ink">
           {editing ? "Edit mailslot" : "New mailslot"}
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-ink-muted">
           {editing
             ? "Changes to name, colour, and icon apply to every email in this slot."
             : "Create a separate inbox with its own name and colour."}
         </p>
 
-        <label className="relative z-10 mt-4 block text-sm font-medium text-gray-700">
+        <label className="relative z-10 mt-4 block text-sm font-medium text-ink-secondary">
           Title
           <input
             ref={titleRef}
@@ -140,19 +140,19 @@ export default function MailslotEditorModal({
               }
             }}
             placeholder="Work, Receipts, Family…"
-            className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
+            className="mt-1 w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-line-strong"
           />
         </label>
 
-        <p className="mt-4 text-sm font-medium text-gray-700">Colour</p>
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-4 text-sm font-medium text-ink-secondary">Colour</p>
+        <p className="mt-1 text-xs text-ink-muted">
           Drag the cursor on the pad, or pick a preset below.
         </p>
         <div className="mt-2">
           <ColorPicker color={color} onChange={setColor} />
         </div>
 
-        <p className="mt-4 text-sm font-medium text-gray-700">Icon</p>
+        <p className="mt-4 text-sm font-medium text-ink-secondary">Icon</p>
         <div className="mt-2 grid grid-cols-8 gap-2">
           {MAILSLOT_ICONS.map((item) => {
             const Icon = item.icon;
@@ -165,8 +165,8 @@ export default function MailslotEditorModal({
                 onClick={() => setIcon(item.id)}
                 className={`flex h-9 items-center justify-center rounded-md border ${
                   selected
-                    ? "border-gray-900 bg-gray-100 text-gray-900"
-                    : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                    ? "border-ink bg-hover text-ink"
+                    : "border-line text-ink-muted hover:bg-hover"
                 }`}
               >
                 <Icon size={16} />
@@ -175,7 +175,7 @@ export default function MailslotEditorModal({
           })}
         </div>
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
         <div className="mt-6 flex items-center justify-between gap-2">
           {editing ? (
@@ -183,7 +183,7 @@ export default function MailslotEditorModal({
               type="button"
               disabled={deleting || saving}
               onClick={() => void remove()}
-              className="rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+              className="rounded-md px-3 py-2 text-sm text-danger hover:bg-danger-soft disabled:opacity-50"
             >
               {deleting ? "Deleting…" : "Delete"}
             </button>
@@ -194,7 +194,7 @@ export default function MailslotEditorModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
+              className="rounded-md px-3 py-2 text-sm text-ink-secondary hover:bg-hover"
             >
               Cancel
             </button>
@@ -202,7 +202,7 @@ export default function MailslotEditorModal({
               type="button"
               disabled={saving || deleting}
               onClick={() => void submit()}
-              className="rounded-md bg-gray-900 px-3 py-2 text-sm text-white hover:bg-gray-800 disabled:opacity-50"
+              className="rounded-md bg-ink px-3 py-2 text-sm text-on-ink hover:opacity-90 disabled:opacity-50"
             >
               {saving
                 ? editing

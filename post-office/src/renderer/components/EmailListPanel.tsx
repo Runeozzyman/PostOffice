@@ -172,27 +172,27 @@ export default function EmailListPanel({
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-white">
-      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 px-4">
+    <div className="flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
         <input
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-400"
+          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-subtle focus:border-line-strong"
         />
       </div>
 
-      {error && <p className="px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="px-4 py-2 text-sm text-danger">{error}</p>}
       {openingId && (
-        <p className="px-4 py-2 text-sm text-gray-500">Opening message…</p>
+        <p className="px-4 py-2 text-sm text-ink-muted">Opening message…</p>
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {loading && emails.length === 0 ? (
-          <p className="p-4 text-gray-500">Loading…</p>
+          <p className="p-4 text-ink-muted">Loading…</p>
         ) : emails.length === 0 ? (
-          <p className="p-4 text-gray-500">
+          <p className="p-4 text-ink-muted">
             {query ? "No messages match that search." : emptyMessage}
           </p>
         ) : (
@@ -213,13 +213,13 @@ export default function EmailListPanel({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-3 text-sm text-gray-600">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 text-sm text-ink-secondary">
         <div className="flex flex-wrap items-center gap-1">
           <button
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(1)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             First
           </button>
@@ -227,7 +227,7 @@ export default function EmailListPanel({
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(page - 10)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             -10
           </button>
@@ -235,7 +235,7 @@ export default function EmailListPanel({
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(page - 1)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Previous
           </button>
@@ -243,7 +243,7 @@ export default function EmailListPanel({
 
         <span className="text-center">
           Page {page} of {pageCount}
-          <span className="block text-xs text-gray-400">{rangeLabel}</span>
+          <span className="block text-xs text-ink-subtle">{rangeLabel}</span>
         </span>
 
         <div className="flex flex-wrap items-center gap-1">
@@ -251,7 +251,7 @@ export default function EmailListPanel({
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(page + 1)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Next
           </button>
@@ -259,7 +259,7 @@ export default function EmailListPanel({
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(page + 10)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             +10
           </button>
@@ -267,7 +267,7 @@ export default function EmailListPanel({
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(pageCount)}
-            className="rounded-md px-2 py-1 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300"
+            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Last
           </button>

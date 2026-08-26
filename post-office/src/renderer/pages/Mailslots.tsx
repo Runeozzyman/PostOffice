@@ -48,15 +48,15 @@ export default function Mailslots() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-gray-50">
-      <div className="flex h-16 shrink-0 items-center border-b border-gray-200 bg-white px-4">
-        <h1 className="text-lg font-semibold text-gray-900">Mailslots</h1>
+    <div className="flex h-full min-w-0 flex-col bg-muted">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
+        <h1 className="text-lg font-semibold text-ink">Mailslots</h1>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-6">
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-4 text-sm text-danger">{error}</p>}
         {loading ? (
-          <p className="text-sm text-gray-500">Loading mailslots…</p>
+          <p className="text-sm text-ink-muted">Loading mailslots…</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {mailslots.map((mailslot, index) => (
@@ -72,7 +72,7 @@ export default function Mailslots() {
             <button
               type="button"
               onClick={() => setEditor("create")}
-              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 bg-white text-gray-500 transition-colors hover:border-gray-400 hover:text-gray-800"
+              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface text-ink-muted transition-colors hover:border-ink-subtle hover:text-ink"
             >
               <FiPlus size={28} />
               <span className="text-sm font-medium">New mailslot</span>

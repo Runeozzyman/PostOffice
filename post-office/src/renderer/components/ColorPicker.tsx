@@ -114,13 +114,13 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
         tabIndex={0}
       >
         <div
-          className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-gray-900 bg-white shadow"
+          className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink bg-surface shadow"
           style={{ left: `${(hue / 360) * 100}%` }}
         />
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+      <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
         <span
-          className="h-4 w-4 rounded-full border border-gray-200"
+          className="h-4 w-4 rounded-full border border-line"
           style={{ backgroundColor: color }}
         />
         <span className="font-mono uppercase">{color}</span>
@@ -134,7 +134,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
             onClick={() => onChange(value)}
             style={{ backgroundColor: value }}
             className={`h-8 w-8 rounded-full ${
-              color.toLowerCase() === value ? "ring-2 ring-offset-2 ring-gray-900" : ""
+              color.toLowerCase() === value ? "ring-2 ring-ink ring-offset-2 ring-offset-surface" : ""
             }`}
           />
         ))}

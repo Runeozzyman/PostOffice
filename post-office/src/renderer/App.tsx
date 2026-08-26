@@ -6,7 +6,9 @@ function App() {
   const {isAuthenticated} = useAuth();
 
   if (isAuthenticated === null) {
-    return <h1>Loading...</h1>;
+    return (
+      <h1 className="p-6 text-ink">Loading...</h1>
+    );
   }
 
   if (!isAuthenticated) {
