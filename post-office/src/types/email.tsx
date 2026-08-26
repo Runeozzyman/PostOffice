@@ -19,7 +19,7 @@ export interface Email {
   mailslotTitle?: string | null;
 }
 
-export type MailboxView = "inbox" | "starred" | "sent";
+export type MailboxView = "inbox" | "starred" | "sent" | "trash";
 
 export interface EmailPage {
   emails: Email[];

@@ -7,7 +7,7 @@ import { loadRefreshToken, saveRefreshToken, deleteRefreshToken } from "./tokenS
 
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/gmail.readonly",
+  "https://www.googleapis.com/auth/gmail.modify",
 ];
 
 const CREDENTIALS_PATH = path.join(
@@ -61,6 +61,7 @@ export async function signInWithGoogle() {
   // Generate Google's login/authorization URL
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
+    prompt: "consent",
     scope: SCOPES,
   });
 
@@ -110,14 +111,17 @@ export async function signInWithGoogle() {
 
   console.log("Authorization code received!");
 
-  const {tokens} = await oauth2Client.getToken(code)
+  const { tokens } = await oauth2Client.getToken(code);
 
-  console.log("Tokens received")
-  console.log(tokens)
+  console.log("Tokens received");
 
-  if(tokens.refresh_token){
-    saveRefreshToken(tokens.refresh_token);
+  if (!tokens.refresh_token) {
+    throw new Error(
+      "Google did not issue a new sign-in token. Revoke PostOffice in your Google Account permissions, then sign in again and accept mail access."
+    );
   }
+
+  saveRefreshToken(tokens.refresh_token);
 
   oauth2Client.setCredentials(tokens)
 

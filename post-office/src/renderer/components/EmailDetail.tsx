@@ -1,11 +1,14 @@
 import { useState } from "react";
-import type { EmailDetail as EmailDetailType } from "../../types/email";
+import { FiRotateCcw, FiTrash2 } from "react-icons/fi";
+import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
 import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
 
 interface EmailDetailProps {
   email: EmailDetailType;
+  mailbox: MailboxView;
   onBack: () => void;
+  onTrashAction: (email: EmailDetailType) => void;
 }
 
 function formatBytes(size: number) {
@@ -20,9 +23,19 @@ function formatBytes(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function EmailDetail({ email, onBack }: EmailDetailProps) {
+export default function EmailDetail({
+  email,
+  mailbox,
+  onBack,
+  onTrashAction,
+}: EmailDetailProps) {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const inTrash = mailbox === "trash";
+
+  const moveTrash = () => {
+    onTrashAction(email);
+  };
 
   const saveAttachment = async (attachmentId: string, filename: string) => {
     setSaveError(null);
@@ -53,14 +66,23 @@ export default function EmailDetail({ email, onBack }: EmailDetailProps) {
         >
           Back
         </button>
-        <h1 className="min-w-0 truncate text-lg font-semibold text-ink">
+        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
           {email.subject || "(no subject)"}
         </h1>
+        <button
+          type="button"
+          onClick={moveTrash}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+        >
+          {inTrash ? <FiRotateCcw size={14} /> : <FiTrash2 size={14} />}
+          {inTrash ? "Restore" : "Trash"}
+        </button>
       </div>
       <div className="shrink-0 border-b border-line px-4 py-3">
         <p className="text-sm text-ink-secondary">{email.from}</p>
         <p className="text-sm text-ink-muted">To: {email.to || "—"}</p>
         <p className="text-xs text-ink-muted">{formatListDate(email.date)}</p>
+        {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
       </div>
 
       {email.attachments.length > 0 && (

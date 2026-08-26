@@ -5,6 +5,7 @@ import Mailslots from "./Mailslots";
 import Settings from "./Settings";
 import Starred from "./Starred";
 import Sent from "./Sent";
+import Trash from "./Trash";
 
 import { useState } from "react";
 
@@ -40,6 +41,13 @@ const HomePage = () => {
           }
         >
           <Sent />
+        </div>
+        <div
+          className={
+            currentPage === "trash" ? "h-full min-w-0" : "hidden"
+          }
+        >
+          <Trash />
         </div>
         {currentPage === "settings" && (
           <div className="h-full min-w-0">

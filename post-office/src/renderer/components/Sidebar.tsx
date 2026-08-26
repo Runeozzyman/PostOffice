@@ -7,6 +7,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiMail,
+  FiTrash2,
 } from "react-icons/fi";
 
 interface SidebarProps {
@@ -92,6 +93,15 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
           collapsed={collapsed}
           onClick={() => {
             setCurrentPage("sent");
+          }}
+        />
+
+        <SidebarItem
+          icon={<FiTrash2 size={18} />}
+          label="Trash"
+          collapsed={collapsed}
+          onClick={() => {
+            setCurrentPage("trash");
           }}
         />
       </nav>

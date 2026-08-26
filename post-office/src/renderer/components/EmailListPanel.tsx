@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { Email, EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
+import {
+  EMAIL_HIDDEN_EVENT,
+  EMAILS_CHANGED_EVENT,
+  notifyEmailHidden,
+  notifyEmailsChanged,
+} from "../helpers/emailEvents";
 import EmailRow from "./EmailRow";
 import EmailDetail from "./EmailDetail";
 
@@ -122,13 +128,35 @@ export default function EmailListPanel({
       }
     };
 
+    const onEmailsChanged = () => {
+      if (!cancelled) {
+        void loadPage().catch(() => undefined);
+      }
+    };
+
+    const onEmailHidden = (event: Event) => {
+      const emailId = (event as CustomEvent<{ emailId: string }>).detail?.emailId;
+
+      if (!emailId || cancelled) {
+        return;
+      }
+
+      setEmails((current) => current.filter((email) => email.id !== emailId));
+      setTotal((current) => Math.max(0, current - 1));
+      setSelected((current) => (current?.id === emailId ? null : current));
+    };
+
     window.addEventListener(MAILSLOTS_CHANGED_EVENT, onMailslotsChanged);
+    window.addEventListener(EMAILS_CHANGED_EVENT, onEmailsChanged);
+    window.addEventListener(EMAIL_HIDDEN_EVENT, onEmailHidden);
 
     return () => {
       cancelled = true;
       window.clearTimeout(reloadTimer);
       unsubscribeStored();
       window.removeEventListener(MAILSLOTS_CHANGED_EVENT, onMailslotsChanged);
+      window.removeEventListener(EMAILS_CHANGED_EVENT, onEmailsChanged);
+      window.removeEventListener(EMAIL_HIDDEN_EVENT, onEmailHidden);
     };
   }, [page, query, mailslotId, mailbox]);
 
@@ -165,9 +193,38 @@ export default function EmailListPanel({
     return `${start}–${end} of ${total}`;
   }, [page, total]);
 
+  const queueTrashAction = (email: Email) => {
+    const restore = mailbox === "trash";
+
+    notifyEmailHidden(email.id);
+
+    void (restore
+      ? window.electronAPI.untrashEmail(email.id)
+      : window.electronAPI.trashEmail(email.id)
+    )
+      .then(() => {
+        notifyEmailsChanged();
+      })
+      .catch((err: unknown) => {
+        setError(
+          err instanceof Error
+            ? err.message
+            : restore
+              ? "Could not restore this message."
+              : "Could not move this message to Trash."
+        );
+        notifyEmailsChanged();
+      });
+  };
+
   if (selected) {
     return (
-      <EmailDetail email={selected} onBack={() => setSelected(null)} />
+      <EmailDetail
+        email={selected}
+        mailbox={mailbox}
+        onBack={() => setSelected(null)}
+        onTrashAction={queueTrashAction}
+      />
     );
   }
 
@@ -208,6 +265,7 @@ export default function EmailListPanel({
               onFiled={() => {
                 void loadPage();
               }}
+              onTrashAction={queueTrashAction}
             />
           ))
         )}

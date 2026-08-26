@@ -33,6 +33,8 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 	applyEmailMailslots: (payload) => electron.ipcRenderer.invoke("apply-email-mailslots", payload),
 	applyMailslotRules: (payload) => electron.ipcRenderer.invoke("apply-mailslot-rules", payload),
 	getEmail: (id) => electron.ipcRenderer.invoke("get-email", id),
+	trashEmail: (id) => electron.ipcRenderer.invoke("trash-email", id),
+	untrashEmail: (id) => electron.ipcRenderer.invoke("untrash-email", id),
 	saveAttachment: (payload) => electron.ipcRenderer.invoke("save-attachment", payload)
 });
 //#endregion

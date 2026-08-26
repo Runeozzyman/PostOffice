@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     pageSize: number;
     query?: string;
     mailslotId?: string;
-    mailbox?: "inbox" | "starred" | "sent";
+    mailbox?: "inbox" | "starred" | "sent" | "trash";
   }): Promise<EmailPage> =>
     ipcRenderer.invoke("list-emails", options),
 
@@ -92,6 +92,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   getEmail: (id: string): Promise<EmailDetail | null> =>
     ipcRenderer.invoke("get-email", id),
+
+  trashEmail: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke("trash-email", id),
+
+  untrashEmail: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke("untrash-email", id),
 
   saveAttachment: (payload: {
     messageId: string;

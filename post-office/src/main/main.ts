@@ -15,6 +15,7 @@ import {
   signInWithGoogle,
   signOutWithGoogle,
 } from "../auth/google";
+import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
 import { getEmail, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling } from "../db/emails";
@@ -87,7 +88,7 @@ ipcMain.handle(
   "list-emails",
   async (
     _event,
-    options: { page: number; pageSize: number; query?: string; mailslotId?: string; mailbox?: "inbox" | "starred" | "sent" }
+    options: { page: number; pageSize: number; query?: string; mailslotId?: string; mailbox?: "inbox" | "starred" | "sent" | "trash" }
   ) => {
     return listInboxPage(options);
   }
@@ -177,6 +178,16 @@ ipcMain.handle(
 
 ipcMain.handle("get-email", async (_event, id: string) => {
   return getEmail(id);
+});
+
+ipcMain.handle("trash-email", async (_event, id: string) => {
+  await trashGmailMessage(id);
+  return true;
+});
+
+ipcMain.handle("untrash-email", async (_event, id: string) => {
+  await untrashGmailMessage(id);
+  return true;
 });
 
 ipcMain.handle(

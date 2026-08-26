@@ -176,17 +176,22 @@ function escapeLike(value: string) {
 const INBOX_FILTER = `emails.labels LIKE '%"INBOX"%'`;
 const STARRED_FILTER = `emails.labels LIKE '%"STARRED"%'`;
 const SENT_FILTER = `emails.labels LIKE '%"SENT"%'`;
+const TRASH_FILTER = `emails.labels LIKE '%"TRASH"%'`;
+const NOT_TRASH = `emails.labels NOT LIKE '%"TRASH"%'`;
 
-function mailboxFilter(mailbox: "inbox" | "starred" | "sent") {
-  if (mailbox === "starred") {
-    return STARRED_FILTER;
+function mailboxFilter(mailbox: "inbox" | "starred" | "sent" | "trash") {
+  if (mailbox === "trash") {
+    return TRASH_FILTER;
   }
 
-  if (mailbox === "sent") {
-    return SENT_FILTER;
-  }
+  const mailboxClause =
+    mailbox === "starred"
+      ? STARRED_FILTER
+      : mailbox === "sent"
+        ? SENT_FILTER
+        : INBOX_FILTER;
 
-  return INBOX_FILTER;
+  return `(${mailboxClause}) AND ${NOT_TRASH}`;
 }
 const LIST_COLUMNS = `
   emails.id,
@@ -256,7 +261,7 @@ export function listInboxPage(options: {
   pageSize: number;
   query?: string;
   mailslotId?: string;
-  mailbox?: "inbox" | "starred" | "sent";
+  mailbox?: "inbox" | "starred" | "sent" | "trash";
 }): EmailPage {
   const pageSize = Math.max(1, options.pageSize);
   const search = options.query?.trim() ?? "";
@@ -372,6 +377,16 @@ export function getEmail(id: string): EmailDetail | null {
       size: attachment.size,
     })),
   };
+}
+
+export function setEmailLabels(id: string, labels: string[]) {
+  if (!getEmail(id)) {
+    throw new Error("Email was not found in the local database.");
+  }
+
+  getDb()
+    .prepare(`UPDATE emails SET labels = ? WHERE id = ?`)
+    .run(JSON.stringify(labels), id);
 }
 
 export function getStoredAttachment(

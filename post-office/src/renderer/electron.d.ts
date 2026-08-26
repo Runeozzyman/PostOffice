@@ -14,7 +14,7 @@ declare global {
         pageSize: number;
         query?: string;
         mailslotId?: string;
-        mailbox?: "inbox" | "starred" | "sent";
+        mailbox?: "inbox" | "starred" | "sent" | "trash";
       }) => Promise<EmailPage>;
       syncEmails: () => Promise<void>;
       onEmailStored: (callback: (email: Email) => void) => () => void;
@@ -22,6 +22,8 @@ declare global {
         callback: (progress: { storedThisRun: number }) => void
       ) => () => void;
       getEmail: (id: string) => Promise<EmailDetail | null>;
+      trashEmail: (id: string) => Promise<boolean>;
+      untrashEmail: (id: string) => Promise<boolean>;
       listMailslots: () => Promise<Mailslot[]>;
       createMailslot: (payload: {
         title: string;

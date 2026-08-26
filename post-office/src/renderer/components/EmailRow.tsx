@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { FiMoreHorizontal } from "react-icons/fi";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { FiMoreHorizontal, FiRotateCcw, FiTrash2 } from "react-icons/fi";
 import type { Email, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { formatListDate } from "../../helpers/formatListDate";
@@ -13,6 +13,7 @@ interface EmailRowProps {
   showMailslotColor: boolean;
   onOpen: (email: Email) => void;
   onFiled: () => void;
+  onTrashAction: (email: Email) => void;
   animationIndex?: number;
 }
 
@@ -27,6 +28,7 @@ export default function EmailRow({
   showMailslotColor,
   onOpen,
   onFiled,
+  onTrashAction,
   animationIndex = 0,
 }: EmailRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -96,6 +98,12 @@ export default function EmailRow({
   }, [menuOpen]);
 
   const color = showMailslotColor ? email.mailslotColor : null;
+  const inTrash = mailbox === "trash";
+
+  const moveTrash = (event: MouseEvent) => {
+    event.stopPropagation();
+    onTrashAction(email);
+  };
 
   return (
     <article
@@ -137,7 +145,18 @@ export default function EmailRow({
       <time className="shrink-0 text-xs text-ink-muted">
         {formatListDate(email.date)}
       </time>
-      <div className="relative shrink-0">
+      <div className="relative flex shrink-0 items-center">
+        <button
+          type="button"
+          disabled={busy}
+          aria-label={inTrash ? "Restore from trash" : "Move to trash"}
+          onClick={(event) => {
+            moveTrash(event);
+          }}
+          className="rounded-md p-1 text-ink-subtle hover:bg-hover hover:text-ink-secondary disabled:opacity-50"
+        >
+          {inTrash ? <FiRotateCcw size={16} /> : <FiTrash2 size={16} />}
+        </button>
         <button
           ref={buttonRef}
           type="button"
