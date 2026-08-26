@@ -1,4 +1,5 @@
 import type { Email, EmailAttachment, EmailDetail, EmailPage } from "../types/email";
+import { parseFrom } from "../helpers/parseFrom";
 import { getDb } from "./database";
 
 interface EmailListRecord {
@@ -11,6 +12,10 @@ interface EmailListRecord {
   snippet: string;
   internal_date: number;
   labels: string;
+  from_email?: string;
+  from_domain?: string;
+  mailslot_color?: string | null;
+  mailslot_title?: string | null;
 }
 
 interface EmailRecord extends EmailListRecord {
@@ -69,6 +74,8 @@ function toEmail(row: EmailListRecord): Email {
     snippet: row.snippet,
     internalDate: row.internal_date,
     labels: parseLabels(row.labels),
+    mailslotColor: row.mailslot_color ?? null,
+    mailslotTitle: row.mailslot_title ?? null,
   };
 }
 
@@ -95,8 +102,10 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
       body_text,
       body_html,
       internal_date,
-      labels
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      labels,
+      from_email,
+      from_domain
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const deleteAttachments = db.prepare(
@@ -118,6 +127,7 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
 
   try {
     for (const email of emails) {
+      const sender = parseFrom(email.from);
       upsertEmail.run(
         email.id,
         email.threadId,
@@ -129,7 +139,9 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
         email.bodyText,
         email.bodyHtml,
         email.internalDate,
-        JSON.stringify(email.labels)
+        JSON.stringify(email.labels),
+        sender.email,
+        sender.domain
       );
 
       deleteAttachments.run(email.id);
@@ -161,23 +173,75 @@ function escapeLike(value: string) {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
 }
 
-const INBOX_FILTER = `labels LIKE '%"INBOX"%'`;
+const INBOX_FILTER = `emails.labels LIKE '%"INBOX"%'`;
 const LIST_COLUMNS = `
-  id,
-  thread_id,
-  "from",
-  "to",
-  subject,
-  date,
-  snippet,
-  internal_date,
-  labels
+  emails.id,
+  emails.thread_id,
+  emails."from",
+  emails."to",
+  emails.subject,
+  emails.date,
+  emails.snippet,
+  emails.internal_date,
+  emails.labels
 `;
+
+const MAILSLOT_SELECT = `
+  (
+    SELECT m.color
+    FROM mailslots m
+    WHERE ${emailMatchesSlot("m.id", "emails")}
+    ORDER BY m.sort_order ASC, m.created_at ASC
+    LIMIT 1
+  ) AS mailslot_color,
+  (
+    SELECT m.title
+    FROM mailslots m
+    WHERE ${emailMatchesSlot("m.id", "emails")}
+    ORDER BY m.sort_order ASC, m.created_at ASC
+    LIMIT 1
+  ) AS mailslot_title
+`;
+
+function emailMatchesSlot(slotIdSql: string, emailTable: string) {
+  return `
+    (
+      NOT EXISTS (
+        SELECT 1 FROM mailslot_email_exclusions x
+        WHERE x.mailslot_id = ${slotIdSql}
+          AND x.email_id = ${emailTable}.id
+      )
+      AND (
+        EXISTS (
+          SELECT 1 FROM mailslot_emails me
+          WHERE me.mailslot_id = ${slotIdSql}
+            AND me.email_id = ${emailTable}.id
+        )
+        OR EXISTS (
+          SELECT 1 FROM mailslot_rules r
+          WHERE r.mailslot_id = ${slotIdSql}
+            AND r.match_type = 'email'
+            AND r.pattern = ${emailTable}.from_email
+        )
+        OR EXISTS (
+          SELECT 1 FROM mailslot_rules r
+          WHERE r.mailslot_id = ${slotIdSql}
+            AND r.match_type = 'domain'
+            AND (
+              ${emailTable}.from_domain = r.pattern
+              OR ${emailTable}.from_domain LIKE ('%.' || r.pattern)
+            )
+        )
+      )
+    )
+  `;
+}
 
 export function listInboxPage(options: {
   page: number;
   pageSize: number;
   query?: string;
+  mailslotId?: string;
 }): EmailPage {
   const pageSize = Math.max(1, options.pageSize);
   const search = options.query?.trim() ?? "";
@@ -185,15 +249,25 @@ export function listInboxPage(options: {
 
   let where = INBOX_FILTER;
 
+  if (options.mailslotId) {
+    where += ` AND ${emailMatchesSlot("?", "emails")}`;
+    params.push(
+      options.mailslotId,
+      options.mailslotId,
+      options.mailslotId,
+      options.mailslotId
+    );
+  }
+
   if (search) {
     const like = `%${escapeLike(search)}%`;
     where += `
       AND (
-        "from" LIKE ? ESCAPE '\\'
-        OR "to" LIKE ? ESCAPE '\\'
-        OR subject LIKE ? ESCAPE '\\'
-        OR snippet LIKE ? ESCAPE '\\'
-        OR body_text LIKE ? ESCAPE '\\'
+        emails."from" LIKE ? ESCAPE '\\'
+        OR emails."to" LIKE ? ESCAPE '\\'
+        OR emails.subject LIKE ? ESCAPE '\\'
+        OR emails.snippet LIKE ? ESCAPE '\\'
+        OR emails.body_text LIKE ? ESCAPE '\\'
       )
     `;
     params.push(like, like, like, like, like);
@@ -210,10 +284,12 @@ export function listInboxPage(options: {
   const rows = getDb()
     .prepare(
       `
-      SELECT ${LIST_COLUMNS}
+      SELECT
+        ${LIST_COLUMNS},
+        ${MAILSLOT_SELECT}
       FROM emails
       WHERE ${where}
-      ORDER BY internal_date DESC
+      ORDER BY emails.internal_date DESC
       LIMIT ? OFFSET ?
     `
     )
@@ -310,4 +386,144 @@ export function getStoredAttachment(
     size: stored.size,
     data: stored.data ? Buffer.from(stored.data) : null,
   };
+}
+
+export function assignEmailToMailslot(emailId: string, mailslotId: string) {
+  const db = getDb();
+  db.prepare(
+    `
+    INSERT OR IGNORE INTO mailslot_emails (mailslot_id, email_id)
+    VALUES (?, ?)
+  `
+  ).run(mailslotId, emailId);
+  db.prepare(
+    `
+    DELETE FROM mailslot_email_exclusions
+    WHERE mailslot_id = ? AND email_id = ?
+  `
+  ).run(mailslotId, emailId);
+}
+
+export function excludeEmailFromMailslot(emailId: string, mailslotId: string) {
+  const db = getDb();
+  db.prepare(
+    `
+    DELETE FROM mailslot_emails
+    WHERE mailslot_id = ? AND email_id = ?
+  `
+  ).run(mailslotId, emailId);
+  db.prepare(
+    `
+    INSERT OR IGNORE INTO mailslot_email_exclusions (mailslot_id, email_id)
+    VALUES (?, ?)
+  `
+  ).run(mailslotId, emailId);
+}
+
+export function applyEmailMailslotMembership(
+  emailId: string,
+  selectedSlotIds: string[]
+) {
+  const current = new Set(getMailslotFiling(emailId).memberIds);
+
+  for (const slotId of selectedSlotIds) {
+    if (!current.has(slotId)) {
+      assignEmailToMailslot(emailId, slotId);
+    }
+  }
+
+  for (const slotId of current) {
+    if (!selectedSlotIds.includes(slotId)) {
+      excludeEmailFromMailslot(emailId, slotId);
+    }
+  }
+}
+
+export function getMailslotFiling(emailId: string): {
+  memberIds: string[];
+  senderRuleIds: string[];
+  domainRuleIds: string[];
+} {
+  const db = getDb();
+  const emailRow = asRow<{ from_email: string; from_domain: string }>(
+    db
+      .prepare(`SELECT from_email, from_domain FROM emails WHERE id = ?`)
+      .get(emailId)
+  );
+  const fromEmail = emailRow?.from_email ?? "";
+  const fromDomain = emailRow?.from_domain ?? "";
+
+  const members = asRows<{ id: string }>(
+    db
+      .prepare(
+        `
+        SELECT m.id
+        FROM mailslots m
+        JOIN emails e ON e.id = ?
+        WHERE ${emailMatchesSlot("m.id", "e")}
+      `
+      )
+      .all(emailId)
+  );
+
+  const senderRules = asRows<{ id: string }>(
+    db
+      .prepare(
+        `
+        SELECT mailslot_id AS id
+        FROM mailslot_rules
+        WHERE match_type = 'email' AND pattern = ?
+      `
+      )
+      .all(fromEmail)
+  );
+
+  const domainRules = asRows<{ id: string }>(
+    db
+      .prepare(
+        `
+        SELECT mailslot_id AS id
+        FROM mailslot_rules
+        WHERE match_type = 'domain'
+          AND (
+            pattern = ?
+            OR ? LIKE ('%.' || pattern)
+          )
+      `
+      )
+      .all(fromDomain, fromDomain)
+  );
+
+  return {
+    memberIds: members.map((row) => row.id),
+    senderRuleIds: senderRules.map((row) => row.id),
+    domainRuleIds: domainRules.map((row) => row.id),
+  };
+}
+
+export function backfillSenderFields() {
+  const db = getDb();
+  const rows = asRows<{ id: string; from: string }>(
+    db.prepare(`SELECT id, "from" FROM emails WHERE from_email = ''`).all()
+  );
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  const update = db.prepare(
+    `UPDATE emails SET from_email = ?, from_domain = ? WHERE id = ?`
+  );
+
+  db.exec("BEGIN");
+  try {
+    for (const row of rows) {
+      const sender = parseFrom(row.from);
+      update.run(sender.email, sender.domain, row.id);
+    }
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
 }

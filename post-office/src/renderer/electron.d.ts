@@ -1,4 +1,5 @@
 import type { Email, EmailDetail, EmailPage } from "../types/email";
+import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
 export {};
 
@@ -12,6 +13,7 @@ declare global {
         page: number;
         pageSize: number;
         query?: string;
+        mailslotId?: string;
       }) => Promise<EmailPage>;
       syncEmails: () => Promise<void>;
       onEmailStored: (callback: (email: Email) => void) => () => void;
@@ -19,6 +21,29 @@ declare global {
         callback: (progress: { storedThisRun: number }) => void
       ) => () => void;
       getEmail: (id: string) => Promise<EmailDetail | null>;
+      listMailslots: () => Promise<Mailslot[]>;
+      createMailslot: (payload: {
+        title: string;
+        color: string;
+        icon: MailslotIcon;
+      }) => Promise<Mailslot>;
+      updateMailslot: (payload: {
+        id: string;
+        title: string;
+        color: string;
+        icon: MailslotIcon;
+      }) => Promise<Mailslot>;
+      deleteMailslot: (id: string) => Promise<boolean>;
+      getMailslotFiling: (emailId: string) => Promise<MailslotFiling>;
+      applyEmailMailslots: (payload: {
+        emailId: string;
+        selectedSlotIds: string[];
+      }) => Promise<boolean>;
+      applyMailslotRules: (payload: {
+        matchType: "email" | "domain";
+        pattern: string;
+        selectedSlotIds: string[];
+      }) => Promise<boolean>;
       saveAttachment: (payload: {
         messageId: string;
         attachmentId: string;

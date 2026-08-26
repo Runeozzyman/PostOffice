@@ -22,7 +22,11 @@ const HomePage = () => {
         >
           <Inbox />
         </div>
-        {currentPage === "mailslots" && <Mailslots />}
+        {currentPage === "mailslots" && (
+          <div className="h-full min-w-0">
+            <Mailslots />
+          </div>
+        )}
         {currentPage === "starred" && <Starred />}
         {currentPage === "sent" && <Sent />}
         {currentPage === "settings" && <Settings />}

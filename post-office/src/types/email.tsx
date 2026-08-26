@@ -15,6 +15,8 @@ export interface Email {
   snippet: string;
   internalDate: number;
   labels: string[];
+  mailslotColor?: string | null;
+  mailslotTitle?: string | null;
 }
 
 export interface EmailPage {

@@ -50,6 +50,18 @@ function migrate(database: DatabaseSync) {
     );
   }
 
+  if (!columns.has("from_email")) {
+    database.exec(
+      `ALTER TABLE emails ADD COLUMN from_email TEXT NOT NULL DEFAULT ''`
+    );
+  }
+
+  if (!columns.has("from_domain")) {
+    database.exec(
+      `ALTER TABLE emails ADD COLUMN from_domain TEXT NOT NULL DEFAULT ''`
+    );
+  }
+
   database.exec(`
     CREATE INDEX IF NOT EXISTS emails_internal_date
     ON emails (internal_date DESC)
@@ -66,6 +78,55 @@ function migrate(database: DatabaseSync) {
       PRIMARY KEY (email_id, id),
       FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE CASCADE
     )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mailslots (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      color TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT 'box',
+      created_at INTEGER NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mailslot_rules (
+      id TEXT PRIMARY KEY,
+      mailslot_id TEXT NOT NULL,
+      match_type TEXT NOT NULL,
+      pattern TEXT NOT NULL,
+      UNIQUE (mailslot_id, match_type, pattern),
+      FOREIGN KEY (mailslot_id) REFERENCES mailslots(id) ON DELETE CASCADE
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mailslot_emails (
+      mailslot_id TEXT NOT NULL,
+      email_id TEXT NOT NULL,
+      PRIMARY KEY (mailslot_id, email_id),
+      FOREIGN KEY (mailslot_id) REFERENCES mailslots(id) ON DELETE CASCADE,
+      FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE CASCADE
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mailslot_email_exclusions (
+      mailslot_id TEXT NOT NULL,
+      email_id TEXT NOT NULL,
+      PRIMARY KEY (mailslot_id, email_id),
+      FOREIGN KEY (mailslot_id) REFERENCES mailslots(id) ON DELETE CASCADE,
+      FOREIGN KEY (email_id) REFERENCES emails(id) ON DELETE CASCADE
+    )
+  `);
+
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS emails_from_email ON emails (from_email)
+  `);
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS emails_from_domain ON emails (from_domain)
   `);
 }
 

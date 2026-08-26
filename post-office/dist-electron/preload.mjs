@@ -25,6 +25,13 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 			electron.ipcRenderer.removeListener("sync-progress", listener);
 		};
 	},
+	listMailslots: () => electron.ipcRenderer.invoke("list-mailslots"),
+	createMailslot: (payload) => electron.ipcRenderer.invoke("create-mailslot", payload),
+	updateMailslot: (payload) => electron.ipcRenderer.invoke("update-mailslot", payload),
+	deleteMailslot: (id) => electron.ipcRenderer.invoke("delete-mailslot", id),
+	getMailslotFiling: (emailId) => electron.ipcRenderer.invoke("get-mailslot-filing", emailId),
+	applyEmailMailslots: (payload) => electron.ipcRenderer.invoke("apply-email-mailslots", payload),
+	applyMailslotRules: (payload) => electron.ipcRenderer.invoke("apply-mailslot-rules", payload),
 	getEmail: (id) => electron.ipcRenderer.invoke("get-email", id),
 	saveAttachment: (payload) => electron.ipcRenderer.invoke("save-attachment", payload)
 });

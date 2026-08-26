@@ -17,7 +17,14 @@ import {
 } from "../auth/google";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
-import { getEmail, getStoredAttachment, listInboxPage } from "../db/emails";
+import { getEmail, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling } from "../db/emails";
+import {
+  applyMailslotRules,
+  createMailslot,
+  deleteMailslot,
+  listMailslots,
+  updateMailslot,
+} from "../db/mailslots";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,7 +87,7 @@ ipcMain.handle(
   "list-emails",
   async (
     _event,
-    options: { page: number; pageSize: number; query?: string }
+    options: { page: number; pageSize: number; query?: string; mailslotId?: string }
   ) => {
     return listInboxPage(options);
   }
@@ -96,6 +103,77 @@ ipcMain.handle("sync-emails", async (event) => {
     }
   );
 });
+
+ipcMain.handle("list-mailslots", async () => {
+  return listMailslots();
+});
+
+ipcMain.handle(
+  "create-mailslot",
+  async (
+    _event,
+    payload: { title: string; color: string; icon: string }
+  ) => {
+    return createMailslot({
+      title: payload.title,
+      color: payload.color,
+      icon: payload.icon as Parameters<typeof createMailslot>[0]["icon"],
+    });
+  }
+);
+
+ipcMain.handle(
+  "update-mailslot",
+  async (
+    _event,
+    payload: { id: string; title: string; color: string; icon: string }
+  ) => {
+    return updateMailslot({
+      id: payload.id,
+      title: payload.title,
+      color: payload.color,
+      icon: payload.icon as Parameters<typeof updateMailslot>[0]["icon"],
+    });
+  }
+);
+
+ipcMain.handle("delete-mailslot", async (_event, id: string) => {
+  deleteMailslot(id);
+  return true;
+});
+
+ipcMain.handle(
+  "get-mailslot-filing",
+  async (_event, emailId: string) => {
+    return getMailslotFiling(emailId);
+  }
+);
+
+ipcMain.handle(
+  "apply-email-mailslots",
+  async (
+    _event,
+    payload: { emailId: string; selectedSlotIds: string[] }
+  ) => {
+    applyEmailMailslotMembership(payload.emailId, payload.selectedSlotIds);
+    return true;
+  }
+);
+
+ipcMain.handle(
+  "apply-mailslot-rules",
+  async (
+    _event,
+    payload: {
+      matchType: "email" | "domain";
+      pattern: string;
+      selectedSlotIds: string[];
+    }
+  ) => {
+    applyMailslotRules(payload);
+    return true;
+  }
+);
 
 ipcMain.handle("get-email", async (_event, id: string) => {
   return getEmail(id);
@@ -178,5 +256,6 @@ ipcMain.handle("google-sign-in", async () => {
 
 app.whenReady().then(() => {
   initDatabase();
+  backfillSenderFields();
   createWindow();
 });
