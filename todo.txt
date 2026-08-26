@@ -1,9 +1,11 @@
-(A) 2026-08-13 Implement page/components to display pulled emails in electron @renderer
-(A) 2026-08-15 Create SQLite database to store user data locally (mailslots, emails,etc)
-(B) 2026-08-15 Allow user to create 'mailslots'
-
+(A) 2026-08-15 Allow users to send mail
+(B) 2026-08-15 Allow users to trash mail
+(C) 2026-08-15 Make mailslot cards re-organizable by dragging
 
 ------------------------------------------------------------------------------------------------------
 
+x (B) 2026-08-25 2026-08-15 Allow user to create 'mailslots'
+x (A) 2026-08-25 2026-08-15 Create SQLite database to store user data locally (mailslots, emails,etc)
+x (A) 2026-08-25 2026-08-13 Implement page/components to display pulled emails in electron @renderer
 x (A) 2026-08-14 2026-08-13 Implement method to perform a full email sync (pull all emails) @google.ts
 x (B) 2026-08-15 2026 08-15 Implement collapsible side bar component
