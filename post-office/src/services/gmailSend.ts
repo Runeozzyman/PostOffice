@@ -9,6 +9,8 @@ export interface SendEmailInput {
   bcc?: string;
   subject: string;
   body: string;
+  threadId?: string;
+  inReplyToMessageId?: string;
 }
 
 function asError(error: unknown) {
@@ -17,6 +19,17 @@ function asError(error: unknown) {
   }
 
   return new Error(String(error));
+}
+
+function getHeader(
+  headers: { name?: string | null; value?: string | null }[] | undefined,
+  name: string
+) {
+  return (
+    headers?.find(
+      (header) => header.name?.toLowerCase() === name.toLowerCase()
+    )?.value ?? ""
+  );
 }
 
 function encodeHeader(value: string) {
@@ -35,12 +48,17 @@ function toBase64Url(value: string) {
     .replaceAll("=", "");
 }
 
-function buildRawMessage(input: SendEmailInput) {
+function buildRawMessage(
+  input: SendEmailInput,
+  reply?: { inReplyTo: string; references: string }
+) {
   const headers = [
     `To: ${input.to.trim()}`,
     input.cc?.trim() ? `Cc: ${input.cc.trim()}` : null,
     input.bcc?.trim() ? `Bcc: ${input.bcc.trim()}` : null,
     `Subject: ${encodeHeader(input.subject.trim() || "(no subject)")}`,
+    reply?.inReplyTo ? `In-Reply-To: ${reply.inReplyTo}` : null,
+    reply?.references ? `References: ${reply.references}` : null,
     "MIME-Version: 1.0",
     "Content-Type: text/plain; charset=utf-8",
   ].filter((line): line is string => Boolean(line));
@@ -63,11 +81,40 @@ export async function sendGmailMessage(input: SendEmailInput) {
 
   const gmail = google.gmail({ version: "v1", auth });
 
+  let replyHeaders: { inReplyTo: string; references: string } | undefined;
+  let threadId = input.threadId?.trim() || undefined;
+
+  if (input.inReplyToMessageId?.trim()) {
+    try {
+      const original = await gmail.users.messages.get({
+        userId: "me",
+        id: input.inReplyToMessageId.trim(),
+        format: "metadata",
+        metadataHeaders: ["Message-ID", "References"],
+      });
+      const headers = original.data.payload?.headers ?? [];
+      const messageId = getHeader(headers, "Message-ID");
+      const references = [getHeader(headers, "References"), messageId]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+
+      if (messageId) {
+        replyHeaders = { inReplyTo: messageId, references };
+      }
+
+      threadId = original.data.threadId || threadId;
+    } catch {
+      // Send anyway; Gmail can still thread by threadId when present.
+    }
+  }
+
   try {
     const sent = await gmail.users.messages.send({
       userId: "me",
       requestBody: {
-        raw: toBase64Url(buildRawMessage(input)),
+        raw: toBase64Url(buildRawMessage(input, replyHeaders)),
+        ...(threadId ? { threadId } : {}),
       },
     });
 

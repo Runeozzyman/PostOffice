@@ -7,6 +7,7 @@ import {
 } from "react-icons/fi";
 import { useCompose } from "../context/ComposeContext";
 import { notifyEmailsChanged } from "../helpers/emailEvents";
+import AddressField from "./AddressField";
 
 const emptyDraft = {
   to: "",
@@ -17,8 +18,13 @@ const emptyDraft = {
 };
 
 export default function ComposeWindow() {
-  const { mode, minimize, restore, fullscreen, close } = useCompose();
+  const { mode, sessionId, seed, minimize, restore, fullscreen, close } =
+    useCompose();
   const [draft, setDraft] = useState(emptyDraft);
+  const [threadId, setThreadId] = useState<string | undefined>();
+  const [inReplyToMessageId, setInReplyToMessageId] = useState<
+    string | undefined
+  >();
   const [showCc, setShowCc] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +32,32 @@ export default function ComposeWindow() {
   useEffect(() => {
     if (mode === "closed") {
       setDraft(emptyDraft);
+      setThreadId(undefined);
+      setInReplyToMessageId(undefined);
       setShowCc(false);
       setSending(false);
       setError(null);
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (sessionId === 0) {
+      return;
+    }
+
+    setDraft({
+      to: seed?.to ?? "",
+      cc: seed?.cc ?? "",
+      bcc: seed?.bcc ?? "",
+      subject: seed?.subject ?? "",
+      body: seed?.body ?? "",
+    });
+    setThreadId(seed?.threadId);
+    setInReplyToMessageId(seed?.inReplyToMessageId);
+    setShowCc(Boolean(seed?.cc || seed?.bcc));
+    setSending(false);
+    setError(null);
+  }, [sessionId, seed]);
 
   if (mode === "closed") {
     return null;
@@ -70,6 +97,8 @@ export default function ComposeWindow() {
         bcc: draft.bcc,
         subject: draft.subject,
         body: draft.body,
+        threadId,
+        inReplyToMessageId,
       });
       notifyEmailsChanged();
       close();
@@ -126,13 +155,10 @@ export default function ComposeWindow() {
     <div className="flex min-h-0 flex-1 flex-col bg-surface">
       <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-sm">
         <span className="w-10 shrink-0 text-ink-muted">To</span>
-        <input
+        <AddressField
           value={draft.to}
-          onChange={(event) =>
-            setDraft((current) => ({ ...current, to: event.target.value }))
-          }
-          className="min-w-0 flex-1 bg-transparent text-ink outline-none"
           placeholder="Recipient"
+          onChange={(to) => setDraft((current) => ({ ...current, to }))}
         />
         {!showCc && (
           <button
@@ -148,22 +174,16 @@ export default function ComposeWindow() {
         <>
           <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-sm">
             <span className="w-10 shrink-0 text-ink-muted">Cc</span>
-            <input
+            <AddressField
               value={draft.cc}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, cc: event.target.value }))
-              }
-              className="min-w-0 flex-1 bg-transparent text-ink outline-none"
+              onChange={(cc) => setDraft((current) => ({ ...current, cc }))}
             />
           </label>
           <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-sm">
             <span className="w-10 shrink-0 text-ink-muted">Bcc</span>
-            <input
+            <AddressField
               value={draft.bcc}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, bcc: event.target.value }))
-              }
-              className="min-w-0 flex-1 bg-transparent text-ink outline-none"
+              onChange={(bcc) => setDraft((current) => ({ ...current, bcc }))}
             />
           </label>
         </>

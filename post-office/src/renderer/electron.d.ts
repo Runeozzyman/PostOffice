@@ -30,7 +30,13 @@ declare global {
         bcc?: string;
         subject: string;
         body: string;
+        threadId?: string;
+        inReplyToMessageId?: string;
       }) => Promise<boolean>;
+      suggestAddresses: (query: string) => Promise<
+        { email: string; name: string }[]
+      >;
+      getAccountEmail: () => Promise<string | null>;
       listMailslots: () => Promise<Mailslot[]>;
       createMailslot: (payload: {
         title: string;

@@ -105,7 +105,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
     bcc?: string;
     subject: string;
     body: string;
+    threadId?: string;
+    inReplyToMessageId?: string;
   }): Promise<boolean> => ipcRenderer.invoke("send-email", payload),
+
+  suggestAddresses: (query: string) =>
+    ipcRenderer.invoke("suggest-addresses", query),
+
+  getAccountEmail: (): Promise<string | null> =>
+    ipcRenderer.invoke("get-account-email"),
 
   saveAttachment: (payload: {
     messageId: string;

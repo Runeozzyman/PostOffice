@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { FiRotateCcw, FiTrash2 } from "react-icons/fi";
+import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiTrash2, FiUsers } from "react-icons/fi";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
 import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
+import {
+  buildForwardDraft,
+  buildReplyDraft,
+} from "../../helpers/composeMessage";
+import { useCompose } from "../context/ComposeContext";
 
 interface EmailDetailProps {
   email: EmailDetailType;
@@ -29,9 +34,17 @@ export default function EmailDetail({
   onBack,
   onTrashAction,
 }: EmailDetailProps) {
+  const { openCompose } = useCompose();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const inTrash = mailbox === "trash";
+
+  const reply = async (replyAll: boolean) => {
+    const accountEmail = await window.electronAPI.getAccountEmail();
+    openCompose(
+      buildReplyDraft(email, { replyAll, accountEmail, mailbox })
+    );
+  };
 
   const moveTrash = () => {
     onTrashAction(email);
@@ -58,7 +71,7 @@ export default function EmailDetail({
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center gap-3 border-b border-line px-4">
+      <div className="flex min-h-16 shrink-0 items-center gap-3 border-b border-line px-4 py-2">
         <button
           type="button"
           onClick={onBack}
@@ -69,14 +82,39 @@ export default function EmailDetail({
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
           {email.subject || "(no subject)"}
         </h1>
-        <button
-          type="button"
-          onClick={moveTrash}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
-        >
-          {inTrash ? <FiRotateCcw size={14} /> : <FiTrash2 size={14} />}
-          {inTrash ? "Restore" : "Trash"}
-        </button>
+        <div className="flex max-w-[28rem] shrink-0 flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => void reply(false)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiCornerUpLeft size={14} />
+            Reply
+          </button>
+          <button
+            type="button"
+            onClick={() => void reply(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiUsers size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={() => openCompose(buildForwardDraft(email))}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiShare2 size={14} />
+            Forward
+          </button>
+          <button
+            type="button"
+            onClick={moveTrash}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            {inTrash ? <FiRotateCcw size={14} /> : <FiTrash2 size={14} />}
+            {inTrash ? "Restore" : "Trash"}
+          </button>
+        </div>
       </div>
       <div className="shrink-0 border-b border-line px-4 py-3">
         <p className="text-sm text-ink-secondary">{email.from}</p>

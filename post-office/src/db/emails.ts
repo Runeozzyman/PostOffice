@@ -1,5 +1,6 @@
+import type { AddressSuggestion } from "../types/compose";
 import type { Email, EmailAttachment, EmailDetail, EmailPage } from "../types/email";
-import { parseFrom } from "../helpers/parseFrom";
+import { parseAddressList, parseFrom } from "../helpers/parseFrom";
 import { getDb } from "./database";
 
 interface EmailListRecord {
@@ -557,4 +558,94 @@ export function backfillSenderFields() {
     db.exec("ROLLBACK");
     throw error;
   }
+}
+
+export function searchAddressSuggestions(query: string): AddressSuggestion[] {
+  const db = getDb();
+  const senders = asRows<{ from_email: string; from: string; last: number }>(
+    db
+      .prepare(
+        `
+        SELECT from_email, "from", MAX(internal_date) AS last
+        FROM emails
+        WHERE from_email != ''
+        GROUP BY from_email
+        ORDER BY last DESC
+        LIMIT 80
+      `
+      )
+      .all()
+  );
+  const recipients = asRows<{ to: string; last: number }>(
+    db
+      .prepare(
+        `
+        SELECT "to" AS "to", internal_date AS last
+        FROM emails
+        WHERE "to" != ''
+        ORDER BY internal_date DESC
+        LIMIT 120
+      `
+      )
+      .all()
+  );
+
+  const best = new Map<
+    string,
+    { email: string; name: string; last: number }
+  >();
+
+  const consider = (email: string, name: string, last: number) => {
+    const key = email.toLowerCase().trim();
+
+    if (!key.includes("@")) {
+      return;
+    }
+
+    const existing = best.get(key);
+    const display =
+      name && name.toLowerCase() !== key ? name : existing?.name ?? "";
+
+    if (!existing || last > existing.last) {
+      best.set(key, {
+        email: key,
+        name: display,
+        last,
+      });
+      return;
+    }
+
+    if (!existing.name && display) {
+      existing.name = display;
+    }
+  };
+
+  for (const row of senders) {
+    const parsed = parseFrom(row.from);
+    consider(row.from_email || parsed.email, parsed.displayName, row.last);
+  }
+
+  for (const row of recipients) {
+    for (const address of parseAddressList(row.to)) {
+      consider(address.email, address.displayName, row.last);
+    }
+  }
+
+  const needle = query.trim().toLowerCase();
+  const matches = [...best.values()].filter((entry) => {
+    if (!needle) {
+      return true;
+    }
+
+    return (
+      entry.email.includes(needle) || entry.name.toLowerCase().includes(needle)
+    );
+  });
+
+  matches.sort((left, right) => right.last - left.last);
+
+  return matches.slice(0, 8).map((entry) => ({
+    email: entry.email,
+    name: entry.name,
+  }));
 }

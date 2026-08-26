@@ -6,12 +6,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { ComposeDraft } from "../../types/compose";
 
 export type ComposeMode = "closed" | "docked" | "minimized" | "fullscreen";
 
 interface ComposeContextValue {
   mode: ComposeMode;
-  openCompose: () => void;
+  sessionId: number;
+  seed: ComposeDraft | null;
+  openCompose: (draft?: ComposeDraft) => void;
   minimize: () => void;
   restore: () => void;
   fullscreen: () => void;
@@ -24,16 +27,38 @@ const ComposeContext = createContext<ComposeContextValue | undefined>(
 
 export function ComposeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<ComposeMode>("closed");
+  const [sessionId, setSessionId] = useState(0);
+  const [seed, setSeed] = useState<ComposeDraft | null>(null);
 
-  const openCompose = useCallback(() => {
-    setMode((current) =>
-      current === "fullscreen" ? "fullscreen" : "docked"
-    );
-  }, []);
+  const openCompose = useCallback(
+    (draft?: ComposeDraft) => {
+      if (draft) {
+        if (
+          mode !== "closed" &&
+          !window.confirm("Replace the message you are writing?")
+        ) {
+          return;
+        }
+
+        setSeed(draft);
+        setSessionId((current) => current + 1);
+      } else if (mode === "closed") {
+        setSeed(null);
+        setSessionId((current) => current + 1);
+      }
+
+      setMode((current) =>
+        current === "fullscreen" ? "fullscreen" : "docked"
+      );
+    },
+    [mode]
+  );
 
   const value = useMemo(
     () => ({
       mode,
+      sessionId,
+      seed,
       openCompose,
       minimize: () => setMode("minimized"),
       restore: () => setMode("docked"),
@@ -43,7 +68,7 @@ export function ComposeProvider({ children }: { children: ReactNode }) {
         ),
       close: () => setMode("closed"),
     }),
-    [mode, openCompose]
+    [mode, sessionId, seed, openCompose]
   );
 
   return (

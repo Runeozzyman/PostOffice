@@ -16,10 +16,11 @@ import {
   signOutWithGoogle,
 } from "../auth/google";
 import { sendGmailMessage } from "../services/gmailSend";
+import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
-import { getEmail, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling } from "../db/emails";
+import { getEmail, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, searchAddressSuggestions } from "../db/emails";
 import {
   applyMailslotRules,
   createMailslot,
@@ -195,12 +196,28 @@ ipcMain.handle(
   "send-email",
   async (
     _event,
-    payload: { to: string; cc?: string; bcc?: string; subject: string; body: string }
+    payload: {
+      to: string;
+      cc?: string;
+      bcc?: string;
+      subject: string;
+      body: string;
+      threadId?: string;
+      inReplyToMessageId?: string;
+    }
   ) => {
     await sendGmailMessage(payload);
     return true;
   }
 );
+
+ipcMain.handle("suggest-addresses", async (_event, query: string) => {
+  return searchAddressSuggestions(typeof query === "string" ? query : "");
+});
+
+ipcMain.handle("get-account-email", async () => {
+  return getGmailAddress();
+});
 
 ipcMain.handle(
   "save-attachment",
@@ -264,6 +281,7 @@ ipcMain.handle(
 
 ipcMain.handle("google-sign-out", async () => {
   signOutWithGoogle();
+  clearGmailProfileCache();
   return true;
 });
 
