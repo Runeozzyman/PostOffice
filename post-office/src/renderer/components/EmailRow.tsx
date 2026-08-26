@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FiMoreHorizontal } from "react-icons/fi";
-import type { Email } from "../../types/email";
+import type { Email, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { formatListDate } from "../../helpers/formatListDate";
 import { parseFrom } from "../../helpers/parseFrom";
@@ -9,19 +9,21 @@ import EmailMailslotMenu from "./EmailMailslotMenu";
 interface EmailRowProps {
   email: Email;
   mailslots: Mailslot[];
+  mailbox?: MailboxView;
   showMailslotColor: boolean;
   onOpen: (email: Email) => void;
   onFiled: () => void;
   animationIndex?: number;
 }
 
-function displayName(from: string) {
-  return parseFrom(from).displayName;
+function displayAddress(value: string) {
+  return parseFrom(value).displayName;
 }
 
 export default function EmailRow({
   email,
   mailslots,
+  mailbox = "inbox",
   showMailslotColor,
   onOpen,
   onFiled,
@@ -114,7 +116,9 @@ export default function EmailRow({
       className="email-row-pop flex cursor-pointer items-baseline gap-4 px-4 py-3 border-b border-gray-200 hover:bg-gray-50"
     >
       <span className="w-40 shrink-0 truncate text-sm font-medium text-gray-900">
-        {displayName(email.from)}
+        {mailbox === "sent"
+          ? displayAddress(email.to) || email.to
+          : displayAddress(email.from)}
       </span>
       <div className="min-w-0 flex-1 truncate text-sm">
         <span className="font-medium text-gray-900">

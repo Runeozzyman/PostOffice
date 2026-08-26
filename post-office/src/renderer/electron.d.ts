@@ -14,6 +14,7 @@ declare global {
         pageSize: number;
         query?: string;
         mailslotId?: string;
+        mailbox?: "inbox" | "starred" | "sent";
       }) => Promise<EmailPage>;
       syncEmails: () => Promise<void>;
       onEmailStored: (callback: (email: Email) => void) => () => void;

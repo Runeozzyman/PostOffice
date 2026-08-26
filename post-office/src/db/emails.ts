@@ -174,6 +174,20 @@ function escapeLike(value: string) {
 }
 
 const INBOX_FILTER = `emails.labels LIKE '%"INBOX"%'`;
+const STARRED_FILTER = `emails.labels LIKE '%"STARRED"%'`;
+const SENT_FILTER = `emails.labels LIKE '%"SENT"%'`;
+
+function mailboxFilter(mailbox: "inbox" | "starred" | "sent") {
+  if (mailbox === "starred") {
+    return STARRED_FILTER;
+  }
+
+  if (mailbox === "sent") {
+    return SENT_FILTER;
+  }
+
+  return INBOX_FILTER;
+}
 const LIST_COLUMNS = `
   emails.id,
   emails.thread_id,
@@ -242,12 +256,14 @@ export function listInboxPage(options: {
   pageSize: number;
   query?: string;
   mailslotId?: string;
+  mailbox?: "inbox" | "starred" | "sent";
 }): EmailPage {
   const pageSize = Math.max(1, options.pageSize);
   const search = options.query?.trim() ?? "";
   const params: (string | number)[] = [];
+  const mailbox = options.mailslotId ? "inbox" : (options.mailbox ?? "inbox");
 
-  let where = INBOX_FILTER;
+  let where = mailboxFilter(mailbox);
 
   if (options.mailslotId) {
     where += ` AND ${emailMatchesSlot("?", "emails")}`;

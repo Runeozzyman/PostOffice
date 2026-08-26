@@ -27,8 +27,20 @@ const HomePage = () => {
             <Mailslots />
           </div>
         )}
-        {currentPage === "starred" && <Starred />}
-        {currentPage === "sent" && <Sent />}
+        <div
+          className={
+            currentPage === "starred" ? "h-full min-w-0" : "hidden"
+          }
+        >
+          <Starred />
+        </div>
+        <div
+          className={
+            currentPage === "sent" ? "h-full min-w-0" : "hidden"
+          }
+        >
+          <Sent />
+        </div>
         {currentPage === "settings" && <Settings />}
       </main>
     </div>

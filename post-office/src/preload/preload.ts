@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     pageSize: number;
     query?: string;
     mailslotId?: string;
+    mailbox?: "inbox" | "starred" | "sent";
   }): Promise<EmailPage> =>
     ipcRenderer.invoke("list-emails", options),
 

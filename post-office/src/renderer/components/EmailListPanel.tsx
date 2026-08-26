@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Email, EmailDetail as EmailDetailType } from "../../types/email";
+import type { Email, EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
 import EmailRow from "./EmailRow";
@@ -9,14 +9,18 @@ const PAGE_SIZE = 100;
 
 interface EmailListPanelProps {
   mailslotId?: string;
+  mailbox?: MailboxView;
   showMailslotColor: boolean;
   emptyMessage: string;
+  searchPlaceholder?: string;
 }
 
 export default function EmailListPanel({
   mailslotId,
+  mailbox = "inbox",
   showMailslotColor,
   emptyMessage,
+  searchPlaceholder = "Search mail…",
 }: EmailListPanelProps) {
   const [emails, setEmails] = useState<Email[]>([]);
   const [mailslots, setMailslots] = useState<Mailslot[]>([]);
@@ -41,7 +45,7 @@ export default function EmailListPanel({
 
   useEffect(() => {
     setPage(1);
-  }, [query, mailslotId]);
+  }, [query, mailslotId, mailbox]);
 
   const loadPage = async () => {
     const result = await window.electronAPI.listEmails({
@@ -49,6 +53,7 @@ export default function EmailListPanel({
       pageSize: PAGE_SIZE,
       query,
       mailslotId,
+      mailbox,
     });
 
     setEmails(result.emails);
@@ -125,7 +130,7 @@ export default function EmailListPanel({
       unsubscribeStored();
       window.removeEventListener(MAILSLOTS_CHANGED_EVENT, onMailslotsChanged);
     };
-  }, [page, query, mailslotId]);
+  }, [page, query, mailslotId, mailbox]);
 
   const openEmail = async (email: Email) => {
     setOpeningId(email.id);
@@ -173,7 +178,7 @@ export default function EmailListPanel({
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Search mail…"
+          placeholder={searchPlaceholder}
           className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-400"
         />
       </div>
@@ -196,6 +201,7 @@ export default function EmailListPanel({
               key={email.id}
               email={email}
               mailslots={mailslots}
+              mailbox={mailbox}
               showMailslotColor={showMailslotColor}
               animationIndex={index}
               onOpen={openEmail}

@@ -87,7 +87,7 @@ ipcMain.handle(
   "list-emails",
   async (
     _event,
-    options: { page: number; pageSize: number; query?: string; mailslotId?: string }
+    options: { page: number; pageSize: number; query?: string; mailslotId?: string; mailbox?: "inbox" | "starred" | "sent" }
   ) => {
     return listInboxPage(options);
   }
