@@ -578,7 +578,10 @@ export function backfillSenderFields() {
   }
 }
 
-export function searchAddressSuggestions(query: string): AddressSuggestion[] {
+let addressContactsCache: { email: string; name: string; last: number }[] | null =
+  null;
+
+export function rebuildAddressContactsCache() {
   const db = getDb();
   const senders = asRows<{ from_email: string; from: string; last: number }>(
     db
@@ -649,18 +652,24 @@ export function searchAddressSuggestions(query: string): AddressSuggestion[] {
     }
   }
 
+  addressContactsCache = [...best.values()].sort(
+    (left, right) => right.last - left.last
+  );
+}
+
+export function searchAddressSuggestions(query: string): AddressSuggestion[] {
+  if (!addressContactsCache) {
+    rebuildAddressContactsCache();
+  }
+
   const needle = query.trim().toLowerCase();
-  const matches = [...best.values()].filter((entry) => {
-    if (!needle) {
-      return true;
-    }
-
-    return (
-      entry.email.includes(needle) || entry.name.toLowerCase().includes(needle)
-    );
-  });
-
-  matches.sort((left, right) => right.last - left.last);
+  const matches = needle
+    ? addressContactsCache.filter(
+        (entry) =>
+          entry.email.includes(needle) ||
+          entry.name.toLowerCase().includes(needle)
+      )
+    : addressContactsCache;
 
   return matches.slice(0, 8).map((entry) => ({
     email: entry.email,

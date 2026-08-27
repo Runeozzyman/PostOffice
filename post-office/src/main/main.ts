@@ -26,7 +26,7 @@ import {
 import { withRestored, withStarred, withTrashed } from "../helpers/emailLabels";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
-import { getEmail, getEmailLabels, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, searchAddressSuggestions, setEmailLabels } from "../db/emails";
+import { getEmail, getEmailLabels, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, rebuildAddressContactsCache, searchAddressSuggestions, setEmailLabels } from "../db/emails";
 import {
   applyMailslotRules,
   createMailslot,
@@ -126,6 +126,7 @@ ipcMain.handle("sync-emails", async (event) => {
       }
     );
   } finally {
+    rebuildAddressContactsCache();
     mailboxSyncInFlight = false;
   }
 });
@@ -282,6 +283,7 @@ ipcMain.handle(
     }
   ) => {
     await sendGmailMessage(payload);
+    rebuildAddressContactsCache();
     return true;
   }
 );
@@ -373,5 +375,6 @@ ipcMain.handle("google-sign-in", async () => {
 app.whenReady().then(() => {
   initDatabase();
   backfillSenderFields();
+  rebuildAddressContactsCache();
   createWindow();
 });

@@ -40,7 +40,7 @@ export default function AddressField({
           setActive(0);
         }
       });
-    }, 120);
+    }, 300);
 
     return () => {
       cancelled = true;
