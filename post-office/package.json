@@ -1,7 +1,9 @@
 {
-  "name": "PostOffice",
+  "name": "post-office",
+  "author": "Austin Wort",
+  "description": "User forward, desktop mail suite.",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {

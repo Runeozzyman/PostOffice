@@ -38,6 +38,9 @@ import {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+app.setName("post-office");
+app.setPath("userData", path.join(app.getPath("appData"), "post-office"));
+
 function isAppUrl(url: string) {
   return (
     url.startsWith("http://localhost:5173") || url.startsWith("file:")

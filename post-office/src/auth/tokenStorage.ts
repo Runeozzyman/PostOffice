@@ -2,10 +2,9 @@ import { app, safeStorage } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
-const TOKEN_PATH = path.join(
-  app.getPath("userData"),
-  "google-token"
-);
+function tokenPath() {
+  return path.join(app.getPath("userData"), "google-token");
+}
 
 export function saveRefreshToken(refreshToken: string) {
   if (!safeStorage.isEncryptionAvailable()) {
@@ -14,16 +13,15 @@ export function saveRefreshToken(refreshToken: string) {
 
   const encryptedToken = safeStorage.encryptString(refreshToken);
 
-  fs.writeFileSync(
-    TOKEN_PATH,
-    encryptedToken
-  );
+  fs.writeFileSync(tokenPath(), encryptedToken);
 
   console.log("Refresh token securely stored.");
 }
 
 export function loadRefreshToken(): string | null {
-  if (!fs.existsSync(TOKEN_PATH)) {
+  const filePath = tokenPath();
+
+  if (!fs.existsSync(filePath)) {
     return null;
   }
 
@@ -31,14 +29,22 @@ export function loadRefreshToken(): string | null {
     throw new Error("Secure storage is not available.");
   }
 
-  const encryptedToken = fs.readFileSync(TOKEN_PATH);
-
-  return safeStorage.decryptString(encryptedToken);
+  try {
+    return safeStorage.decryptString(fs.readFileSync(filePath));
+  } catch {
+    console.warn(
+      "Stored Google token could not be decrypted. Sign in again."
+    );
+    fs.unlinkSync(filePath);
+    return null;
+  }
 }
 
-export function deleteRefreshToken(){
-  if (fs.existsSync(TOKEN_PATH)){
-    fs.unlinkSync(TOKEN_PATH);
+export function deleteRefreshToken() {
+  const filePath = tokenPath();
+
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
   }
 
   console.log("Refresh token deleted");
