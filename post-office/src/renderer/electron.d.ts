@@ -63,12 +63,12 @@ declare global {
       getMailslotFiling: (emailId: string) => Promise<MailslotFiling>;
       applyEmailMailslots: (payload: {
         emailId: string;
-        selectedSlotIds: string[];
+        selectedSlotId: string | null;
       }) => Promise<boolean>;
       applyMailslotRules: (payload: {
         matchType: "email" | "domain";
         pattern: string;
-        selectedSlotIds: string[];
+        selectedSlotId: string | null;
       }) => Promise<boolean>;
       saveAttachment: (payload: {
         messageId: string;

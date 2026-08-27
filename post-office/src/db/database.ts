@@ -128,6 +128,69 @@ function migrate(database: DatabaseSync) {
   database.exec(`
     CREATE INDEX IF NOT EXISTS emails_from_domain ON emails (from_domain)
   `);
+
+  collapseExclusiveMailslots(database);
+}
+
+function collapseExclusiveMailslots(database: DatabaseSync) {
+  database.exec(`
+    DELETE FROM mailslot_emails
+    WHERE rowid IN (
+      SELECT me.rowid
+      FROM mailslot_emails me
+      JOIN mailslots m ON m.id = me.mailslot_id
+      WHERE EXISTS (
+        SELECT 1
+        FROM mailslot_emails other
+        JOIN mailslots om ON om.id = other.mailslot_id
+        WHERE other.email_id = me.email_id
+          AND (
+            om.sort_order < m.sort_order
+            OR (om.sort_order = m.sort_order AND om.created_at < m.created_at)
+            OR (
+              om.sort_order = m.sort_order
+              AND om.created_at = m.created_at
+              AND om.id < m.id
+            )
+          )
+      )
+    )
+  `);
+
+  database.exec(`
+    DELETE FROM mailslot_rules
+    WHERE rowid IN (
+      SELECT rule.rowid
+      FROM mailslot_rules rule
+      JOIN mailslots m ON m.id = rule.mailslot_id
+      WHERE EXISTS (
+        SELECT 1
+        FROM mailslot_rules other
+        JOIN mailslots om ON om.id = other.mailslot_id
+        WHERE other.match_type = rule.match_type
+          AND other.pattern = rule.pattern
+          AND (
+            om.sort_order < m.sort_order
+            OR (om.sort_order = m.sort_order AND om.created_at < m.created_at)
+            OR (
+              om.sort_order = m.sort_order
+              AND om.created_at = m.created_at
+              AND om.id < m.id
+            )
+          )
+      )
+    )
+  `);
+
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS mailslot_emails_email_id
+    ON mailslot_emails (email_id)
+  `);
+
+  database.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS mailslot_rules_pattern
+    ON mailslot_rules (match_type, pattern)
+  `);
 }
 
 export function initDatabase(): DatabaseSync {

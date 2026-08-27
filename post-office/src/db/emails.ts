@@ -210,16 +210,12 @@ const MAILSLOT_SELECT = `
   (
     SELECT m.color
     FROM mailslots m
-    WHERE ${emailMatchesSlot("m.id", "emails")}
-    ORDER BY m.sort_order ASC, m.created_at ASC
-    LIMIT 1
+    WHERE m.id = ${winningMailslotId("emails")}
   ) AS mailslot_color,
   (
     SELECT m.title
     FROM mailslots m
-    WHERE ${emailMatchesSlot("m.id", "emails")}
-    ORDER BY m.sort_order ASC, m.created_at ASC
-    LIMIT 1
+    WHERE m.id = ${winningMailslotId("emails")}
   ) AS mailslot_title
 `;
 
@@ -257,6 +253,18 @@ function emailMatchesSlot(slotIdSql: string, emailTable: string) {
   `;
 }
 
+function winningMailslotId(emailTable: string) {
+  return `
+    (
+      SELECT m.id
+      FROM mailslots m
+      WHERE ${emailMatchesSlot("m.id", emailTable)}
+      ORDER BY m.sort_order ASC, m.created_at ASC
+      LIMIT 1
+    )
+  `;
+}
+
 export function listInboxPage(options: {
   page: number;
   pageSize: number;
@@ -272,13 +280,8 @@ export function listInboxPage(options: {
   let where = mailboxFilter(mailbox);
 
   if (options.mailslotId) {
-    where += ` AND ${emailMatchesSlot("?", "emails")}`;
-    params.push(
-      options.mailslotId,
-      options.mailslotId,
-      options.mailslotId,
-      options.mailslotId
-    );
+    where += ` AND ${winningMailslotId("emails")} = ?`;
+    params.push(options.mailslotId);
   }
 
   if (search) {
@@ -466,20 +469,20 @@ export function excludeEmailFromMailslot(emailId: string, mailslotId: string) {
 
 export function applyEmailMailslotMembership(
   emailId: string,
-  selectedSlotIds: string[]
+  selectedSlotId: string | null
 ) {
-  const current = new Set(getMailslotFiling(emailId).memberIds);
+  const slots = asRows<{ id: string }>(
+    getDb().prepare(`SELECT id FROM mailslots`).all()
+  );
 
-  for (const slotId of selectedSlotIds) {
-    if (!current.has(slotId)) {
-      assignEmailToMailslot(emailId, slotId);
+  for (const slot of slots) {
+    if (slot.id !== selectedSlotId) {
+      excludeEmailFromMailslot(emailId, slot.id);
     }
   }
 
-  for (const slotId of current) {
-    if (!selectedSlotIds.includes(slotId)) {
-      excludeEmailFromMailslot(emailId, slotId);
-    }
+  if (selectedSlotId) {
+    assignEmailToMailslot(emailId, selectedSlotId);
   }
 }
 
@@ -497,17 +500,16 @@ export function getMailslotFiling(emailId: string): {
   const fromEmail = emailRow?.from_email ?? "";
   const fromDomain = emailRow?.from_domain ?? "";
 
-  const members = asRows<{ id: string }>(
+  const memberRow = asRow<{ id: string | null }>(
     db
       .prepare(
         `
-        SELECT m.id
-        FROM mailslots m
-        JOIN emails e ON e.id = ?
-        WHERE ${emailMatchesSlot("m.id", "e")}
+        SELECT ${winningMailslotId("e")} AS id
+        FROM emails e
+        WHERE e.id = ?
       `
       )
-      .all(emailId)
+      .get(emailId)
   );
 
   const senderRules = asRows<{ id: string }>(
@@ -517,6 +519,7 @@ export function getMailslotFiling(emailId: string): {
         SELECT mailslot_id AS id
         FROM mailslot_rules
         WHERE match_type = 'email' AND pattern = ?
+        LIMIT 1
       `
       )
       .all(fromEmail)
@@ -527,19 +530,22 @@ export function getMailslotFiling(emailId: string): {
       .prepare(
         `
         SELECT mailslot_id AS id
-        FROM mailslot_rules
-        WHERE match_type = 'domain'
+        FROM mailslot_rules r
+        JOIN mailslots m ON m.id = r.mailslot_id
+        WHERE r.match_type = 'domain'
           AND (
-            pattern = ?
-            OR ? LIKE ('%.' || pattern)
+            r.pattern = ?
+            OR ? LIKE ('%.' || r.pattern)
           )
+        ORDER BY m.sort_order ASC, m.created_at ASC
+        LIMIT 1
       `
       )
       .all(fromDomain, fromDomain)
   );
 
   return {
-    memberIds: members.map((row) => row.id),
+    memberIds: memberRow?.id ? [memberRow.id] : [],
     senderRuleIds: senderRules.map((row) => row.id),
     domainRuleIds: domainRules.map((row) => row.id),
   };

@@ -79,14 +79,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   applyEmailMailslots: (payload: {
     emailId: string;
-    selectedSlotIds: string[];
+    selectedSlotId: string | null;
   }): Promise<boolean> =>
     ipcRenderer.invoke("apply-email-mailslots", payload),
 
   applyMailslotRules: (payload: {
     matchType: "email" | "domain";
     pattern: string;
-    selectedSlotIds: string[];
+    selectedSlotId: string | null;
   }): Promise<boolean> =>
     ipcRenderer.invoke("apply-mailslot-rules", payload),
 

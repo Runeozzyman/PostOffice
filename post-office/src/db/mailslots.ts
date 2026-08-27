@@ -213,40 +213,24 @@ export function removeMailslotRule(input: {
 export function applyMailslotRules(input: {
   matchType: "email" | "domain";
   pattern: string;
-  selectedSlotIds: string[];
+  selectedSlotId: string | null;
 }) {
   const pattern = input.pattern.trim().toLowerCase();
-  const current = new Set(
-    asRows<{ id: string }>(
-      getDb()
-        .prepare(
-          `
-          SELECT mailslot_id AS id
-          FROM mailslot_rules
-          WHERE match_type = ? AND pattern = ?
-        `
-        )
-        .all(input.matchType, pattern)
-    ).map((row) => row.id)
-  );
 
-  for (const slotId of input.selectedSlotIds) {
-    if (!current.has(slotId)) {
-      addMailslotRule({
-        mailslotId: slotId,
-        matchType: input.matchType,
-        pattern,
-      });
-    }
-  }
+  getDb()
+    .prepare(
+      `
+      DELETE FROM mailslot_rules
+      WHERE match_type = ? AND pattern = ?
+    `
+    )
+    .run(input.matchType, pattern);
 
-  for (const slotId of current) {
-    if (!input.selectedSlotIds.includes(slotId)) {
-      removeMailslotRule({
-        mailslotId: slotId,
-        matchType: input.matchType,
-        pattern,
-      });
-    }
+  if (input.selectedSlotId) {
+    addMailslotRule({
+      mailslotId: input.selectedSlotId,
+      matchType: input.matchType,
+      pattern,
+    });
   }
 }

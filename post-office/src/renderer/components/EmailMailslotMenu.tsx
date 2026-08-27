@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { FiCheck, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import type { Mailslot, MailslotFiling } from "../../types/mailslot";
 import { isPublicEmailDomain, parseFrom } from "../../helpers/parseFrom";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
@@ -36,7 +36,7 @@ export default function EmailMailslotMenu({
 }: EmailMailslotMenuProps) {
   const [step, setStep] = useState<"actions" | "slots">("actions");
   const [action, setAction] = useState<FilingAction | null>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filing, setFiling] = useState<MailslotFiling | null>(null);
   const [slots, setSlots] = useState<Mailslot[]>(mailslots);
   const sender = parseFrom(fromHeader);
@@ -46,7 +46,7 @@ export default function EmailMailslotMenu({
     if (!open) {
       setStep("actions");
       setAction(null);
-      setSelectedIds([]);
+      setSelectedId(null);
       loadedFor.current = null;
       return;
     }
@@ -103,6 +103,7 @@ export default function EmailMailslotMenu({
       : action === "sender"
         ? (filing?.senderRuleIds ?? [])
         : (filing?.domainRuleIds ?? []);
+  const currentId = currentIds[0] ?? null;
 
   const chooseAction = (next: FilingAction) => {
     const ids =
@@ -112,17 +113,13 @@ export default function EmailMailslotMenu({
           ? (filing?.senderRuleIds ?? [])
           : (filing?.domainRuleIds ?? []);
     setAction(next);
-    setSelectedIds(ids);
+    setSelectedId(ids[0] ?? null);
     setStep("slots");
     onStepChange("slots");
   };
 
-  const toggleSlot = (slotId: string) => {
-    setSelectedIds((current) =>
-      current.includes(slotId)
-        ? current.filter((id) => id !== slotId)
-        : [...current, slotId]
-    );
+  const chooseSlot = (slotId: string) => {
+    setSelectedId((current) => (current === slotId ? null : slotId));
   };
 
   const confirm = async () => {
@@ -135,13 +132,13 @@ export default function EmailMailslotMenu({
       if (action === "email") {
         await window.electronAPI.applyEmailMailslots({
           emailId,
-          selectedSlotIds: selectedIds,
+          selectedSlotId: selectedId,
         });
       } else {
         await window.electronAPI.applyMailslotRules({
           matchType: action === "sender" ? "email" : "domain",
           pattern: action === "sender" ? sender.email : sender.domain,
-          selectedSlotIds: selectedIds,
+          selectedSlotId: selectedId,
         });
       }
 
@@ -169,7 +166,7 @@ export default function EmailMailslotMenu({
       {step === "actions" ? (
         <div className="flex flex-col py-1">
           <p className="px-3 py-2 text-xs font-medium uppercase tracking-wide text-ink-subtle">
-            Add to mailslot
+            Add to one mailslot
           </p>
           <button
             type="button"
@@ -228,25 +225,27 @@ export default function EmailMailslotMenu({
           ) : (
             <div className="max-h-64 overflow-y-auto py-1">
               {slots.map((mailslot) => {
-                const checked = selectedIds.includes(mailslot.id);
-                const currentlyIn = currentIds.includes(mailslot.id);
+                const checked = selectedId === mailslot.id;
+                const currentlyIn = currentId === mailslot.id;
 
                 return (
                   <button
                     key={mailslot.id}
                     type="button"
                     disabled={busy}
-                    onClick={() => toggleSlot(mailslot.id)}
+                    onClick={() => chooseSlot(mailslot.id)}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-hover"
                   >
                     <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
                         checked
                           ? "border-ink bg-ink text-on-ink"
                           : "border-line-strong bg-surface"
                       }`}
                     >
-                      {checked && <FiCheck size={12} />}
+                      {checked && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-on-ink" />
+                      )}
                     </span>
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"

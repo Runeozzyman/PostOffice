@@ -162,9 +162,9 @@ ipcMain.handle(
   "apply-email-mailslots",
   async (
     _event,
-    payload: { emailId: string; selectedSlotIds: string[] }
+    payload: { emailId: string; selectedSlotId: string | null }
   ) => {
-    applyEmailMailslotMembership(payload.emailId, payload.selectedSlotIds);
+    applyEmailMailslotMembership(payload.emailId, payload.selectedSlotId);
     return true;
   }
 );
@@ -176,7 +176,7 @@ ipcMain.handle(
     payload: {
       matchType: "email" | "domain";
       pattern: string;
-      selectedSlotIds: string[];
+      selectedSlotId: string | null;
     }
   ) => {
     applyMailslotRules(payload);
