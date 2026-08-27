@@ -1,3 +1,4 @@
+import type { ComposeAttachment } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -42,7 +43,13 @@ declare global {
         body: string;
         threadId?: string;
         inReplyToMessageId?: string;
+        attachments?: ComposeAttachment[];
       }) => Promise<boolean>;
+      pickComposeAttachments: () => Promise<ComposeAttachment[]>;
+      composeAttachmentsFromPaths: (
+        filePaths: string[]
+      ) => Promise<ComposeAttachment[]>;
+      getPathForFile: (file: File) => string;
       suggestAddresses: (query: string) => Promise<
         { email: string; name: string }[]
       >;

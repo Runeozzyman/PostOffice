@@ -1,12 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import {
   FiMaximize2,
   FiMinimize2,
   FiMinus,
+  FiPaperclip,
   FiX,
 } from "react-icons/fi";
 import { useCompose } from "../context/ComposeContext";
 import { notifyEmailsChanged } from "../helpers/emailEvents";
+import { GMAIL_MAX_ATTACHMENT_BYTES } from "../../helpers/gmailLimits";
+import type { ComposeAttachment } from "../../types/compose";
 import AddressField from "./AddressField";
 
 const emptyDraft = {
@@ -17,25 +20,41 @@ const emptyDraft = {
   body: "",
 };
 
+function formatBytes(size: number) {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ComposeWindow() {
   const { mode, sessionId, seed, minimize, restore, fullscreen, close } =
     useCompose();
   const [draft, setDraft] = useState(emptyDraft);
+  const [attachments, setAttachments] = useState<ComposeAttachment[]>([]);
   const [threadId, setThreadId] = useState<string | undefined>();
   const [inReplyToMessageId, setInReplyToMessageId] = useState<
     string | undefined
   >();
   const [showCc, setShowCc] = useState(false);
   const [sending, setSending] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (mode === "closed") {
       setDraft(emptyDraft);
+      setAttachments([]);
       setThreadId(undefined);
       setInReplyToMessageId(undefined);
       setShowCc(false);
       setSending(false);
+      setDragging(false);
       setError(null);
     }
   }, [mode]);
@@ -52,10 +71,12 @@ export default function ComposeWindow() {
       subject: seed?.subject ?? "",
       body: seed?.body ?? "",
     });
+    setAttachments([]);
     setThreadId(seed?.threadId);
     setInReplyToMessageId(seed?.inReplyToMessageId);
     setShowCc(Boolean(seed?.cc || seed?.bcc));
     setSending(false);
+    setDragging(false);
     setError(null);
   }, [sessionId, seed]);
 
@@ -68,7 +89,8 @@ export default function ComposeWindow() {
     draft.cc.trim() ||
     draft.bcc.trim() ||
     draft.subject.trim() ||
-    draft.body.trim();
+    draft.body.trim() ||
+    attachments.length > 0;
 
   const requestClose = () => {
     if (
@@ -81,9 +103,68 @@ export default function ComposeWindow() {
     close();
   };
 
+  const addAttachments = (incoming: ComposeAttachment[]) => {
+    if (incoming.length === 0) {
+      return;
+    }
+
+    setAttachments((current) => {
+      const existing = new Set(current.map((item) => item.path));
+      const next = [
+        ...current,
+        ...incoming.filter((item) => !existing.has(item.path)),
+      ];
+      const total = next.reduce((sum, item) => sum + item.size, 0);
+
+      if (total > GMAIL_MAX_ATTACHMENT_BYTES) {
+        setError("Attachments are over Gmail’s 25 MB limit.");
+        return current;
+      }
+
+      setError(null);
+      return next;
+    });
+  };
+
+  const pickFiles = async () => {
+    const picked = await window.electronAPI.pickComposeAttachments();
+    addAttachments(picked);
+  };
+
+  const onDrop = async (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragging(false);
+
+    const files = [...event.dataTransfer.files];
+    const paths = files
+      .map((file) => {
+        try {
+          return window.electronAPI.getPathForFile(file);
+        } catch {
+          return "";
+        }
+      })
+      .filter(Boolean);
+
+    if (paths.length === 0) {
+      setError("Could not attach those files.");
+      return;
+    }
+
+    const items = await window.electronAPI.composeAttachmentsFromPaths(paths);
+    addAttachments(items);
+  };
+
   const send = async () => {
     if (!draft.to.trim()) {
       setError("Add at least one recipient.");
+      return;
+    }
+
+    const total = attachments.reduce((sum, item) => sum + item.size, 0);
+
+    if (total > GMAIL_MAX_ATTACHMENT_BYTES) {
+      setError("Attachments are over Gmail’s 25 MB limit.");
       return;
     }
 
@@ -99,6 +180,7 @@ export default function ComposeWindow() {
         body: draft.body,
         threadId,
         inReplyToMessageId,
+        attachments,
       });
       notifyEmailsChanged();
       close();
@@ -152,7 +234,12 @@ export default function ComposeWindow() {
   );
 
   const fields = (
-    <div className="flex min-h-0 flex-1 flex-col bg-surface">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-surface">
+      {dragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center border-2 border-dashed border-ink/40 bg-surface/80 text-sm font-medium text-ink">
+          Drop files to attach
+        </div>
+      )}
       <label className="flex items-center gap-2 border-b border-line px-3 py-2 text-sm">
         <span className="w-10 shrink-0 text-ink-muted">To</span>
         <AddressField
@@ -207,10 +294,46 @@ export default function ComposeWindow() {
         className="min-h-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm text-ink outline-none"
         placeholder="Write your message…"
       />
+      {attachments.length > 0 && (
+        <ul className="flex max-h-28 shrink-0 flex-wrap gap-2 overflow-auto border-t border-line px-3 py-2">
+          {attachments.map((attachment) => (
+            <li
+              key={attachment.path}
+              className="flex max-w-full items-center gap-1.5 rounded-md border border-line bg-hover px-2 py-1 text-xs text-ink"
+            >
+              <span className="min-w-0 truncate">{attachment.filename}</span>
+              <span className="shrink-0 text-ink-muted">
+                {formatBytes(attachment.size)}
+              </span>
+              <button
+                type="button"
+                aria-label={`Remove ${attachment.filename}`}
+                onClick={() =>
+                  setAttachments((current) =>
+                    current.filter((item) => item.path !== attachment.path)
+                  )
+                }
+                className="rounded p-0.5 text-ink-muted hover:text-ink"
+              >
+                <FiX size={12} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {error && (
         <p className="shrink-0 px-3 pb-2 text-sm text-danger">{error}</p>
       )}
-      <div className="flex shrink-0 items-center justify-end border-t border-line px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-3 py-2">
+        <button
+          type="button"
+          aria-label="Attach files"
+          onClick={() => void pickFiles()}
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-ink-secondary hover:bg-hover hover:text-ink"
+        >
+          <FiPaperclip size={16} />
+          Attach
+        </button>
         <button
           type="button"
           disabled={sending}
@@ -224,7 +347,27 @@ export default function ComposeWindow() {
   );
 
   return (
-    <div className={`compose-shell compose-shell--${mode}`}>
+    <div
+      className={`compose-shell compose-shell--${mode}`}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        if (event.dataTransfer.types.includes("Files")) {
+          setDragging(true);
+        }
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+          setDragging(false);
+        }
+      }}
+      onDrop={(event) => {
+        void onDrop(event);
+      }}
+    >
       {chrome}
       {fields}
     </div>

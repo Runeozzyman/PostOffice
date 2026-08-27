@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
+import type { ComposeAttachment } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -132,7 +133,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     body: string;
     threadId?: string;
     inReplyToMessageId?: string;
+    attachments?: ComposeAttachment[];
   }): Promise<boolean> => ipcRenderer.invoke("send-email", payload),
+
+  pickComposeAttachments: (): Promise<ComposeAttachment[]> =>
+    ipcRenderer.invoke("pick-compose-attachments"),
+
+  composeAttachmentsFromPaths: (filePaths: string[]): Promise<ComposeAttachment[]> =>
+    ipcRenderer.invoke("compose-attachments-from-paths", filePaths),
+
+  getPathForFile: (file: File): string => webUtils.getPathForFile(file),
 
   suggestAddresses: (query: string) =>
     ipcRenderer.invoke("suggest-addresses", query),

@@ -16,6 +16,8 @@ import {
   signOutWithGoogle,
 } from "../auth/google";
 import { sendGmailMessage } from "../services/gmailSend";
+import { mimeFromFilename } from "../helpers/mimeFromFilename";
+import type { ComposeAttachment } from "../types/compose";
 import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
 import { setGmailStarred } from "../services/gmailStar";
@@ -40,6 +42,26 @@ const __dirname = path.dirname(__filename);
 
 app.setName("post-office");
 app.setPath("userData", path.join(app.getPath("appData"), "post-office"));
+
+function composeAttachmentFromPath(filePath: string): ComposeAttachment | null {
+  try {
+    const stat = fs.statSync(filePath);
+
+    if (!stat.isFile()) {
+      return null;
+    }
+
+    const filename = path.basename(filePath);
+    return {
+      path: filePath,
+      filename,
+      size: stat.size,
+      mimeType: mimeFromFilename(filename),
+    };
+  } catch {
+    return null;
+  }
+}
 
 function isAppUrl(url: string) {
   return (
@@ -280,11 +302,46 @@ ipcMain.handle(
       body: string;
       threadId?: string;
       inReplyToMessageId?: string;
+      attachments?: ComposeAttachment[];
     }
   ) => {
     await sendGmailMessage(payload);
     rebuildAddressContactsCache();
     return true;
+  }
+);
+
+ipcMain.handle("pick-compose-attachments", async (event) => {
+  const browserWindow = BrowserWindow.fromWebContents(event.sender);
+  const result = browserWindow
+    ? await dialog.showOpenDialog(browserWindow, {
+        properties: ["openFile", "multiSelections"],
+        title: "Attach files",
+      })
+    : await dialog.showOpenDialog({
+        properties: ["openFile", "multiSelections"],
+        title: "Attach files",
+      });
+
+  if (result.canceled) {
+    return [] as ComposeAttachment[];
+  }
+
+  return result.filePaths
+    .map((filePath) => composeAttachmentFromPath(filePath))
+    .filter((item): item is ComposeAttachment => Boolean(item));
+});
+
+ipcMain.handle(
+  "compose-attachments-from-paths",
+  async (_event, filePaths: string[]) => {
+    if (!Array.isArray(filePaths)) {
+      return [] as ComposeAttachment[];
+    }
+
+    return filePaths
+      .map((filePath) => composeAttachmentFromPath(filePath))
+      .filter((item): item is ComposeAttachment => Boolean(item));
   }
 );
 

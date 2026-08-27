@@ -46,6 +46,9 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 		};
 	},
 	sendEmail: (payload) => electron.ipcRenderer.invoke("send-email", payload),
+	pickComposeAttachments: () => electron.ipcRenderer.invoke("pick-compose-attachments"),
+	composeAttachmentsFromPaths: (filePaths) => electron.ipcRenderer.invoke("compose-attachments-from-paths", filePaths),
+	getPathForFile: (file) => electron.webUtils.getPathForFile(file),
 	suggestAddresses: (query) => electron.ipcRenderer.invoke("suggest-addresses", query),
 	getAccountEmail: () => electron.ipcRenderer.invoke("get-account-email"),
 	saveAttachment: (payload) => electron.ipcRenderer.invoke("save-attachment", payload)

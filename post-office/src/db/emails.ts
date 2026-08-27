@@ -662,14 +662,15 @@ export function searchAddressSuggestions(query: string): AddressSuggestion[] {
     rebuildAddressContactsCache();
   }
 
+  const contacts = addressContactsCache ?? [];
   const needle = query.trim().toLowerCase();
   const matches = needle
-    ? addressContactsCache.filter(
+    ? contacts.filter(
         (entry) =>
           entry.email.includes(needle) ||
           entry.name.toLowerCase().includes(needle)
       )
-    : addressContactsCache;
+    : contacts;
 
   return matches.slice(0, 8).map((entry) => ({
     email: entry.email,

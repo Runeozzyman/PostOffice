@@ -12,3 +12,10 @@ export interface AddressSuggestion {
   email: string;
   name: string;
 }
+
+export interface ComposeAttachment {
+  path: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+}
