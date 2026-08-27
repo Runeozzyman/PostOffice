@@ -35,6 +35,16 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 	getEmail: (id) => electron.ipcRenderer.invoke("get-email", id),
 	trashEmail: (id) => electron.ipcRenderer.invoke("trash-email", id),
 	untrashEmail: (id) => electron.ipcRenderer.invoke("untrash-email", id),
+	setEmailStarred: (payload) => electron.ipcRenderer.invoke("set-email-starred", payload),
+	onEmailActionFailed: (callback) => {
+		const listener = (_event, payload) => {
+			callback(payload);
+		};
+		electron.ipcRenderer.on("email-action-failed", listener);
+		return () => {
+			electron.ipcRenderer.removeListener("email-action-failed", listener);
+		};
+	},
 	sendEmail: (payload) => electron.ipcRenderer.invoke("send-email", payload),
 	suggestAddresses: (query) => electron.ipcRenderer.invoke("suggest-addresses", query),
 	getAccountEmail: () => electron.ipcRenderer.invoke("get-account-email"),

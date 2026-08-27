@@ -4,10 +4,17 @@ import type { Mailslot } from "../../types/mailslot";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
 import {
   EMAIL_HIDDEN_EVENT,
+  EMAIL_MUTATED_EVENT,
   EMAILS_CHANGED_EVENT,
-  notifyEmailHidden,
-  notifyEmailsChanged,
+  notifyEmailMutated,
 } from "../helpers/emailEvents";
+import {
+  applyEmailToList,
+  emailMatchesMailbox,
+  withRestored,
+  withStarred,
+  withTrashed,
+} from "../../helpers/emailLabels";
 import EmailRow from "./EmailRow";
 import EmailDetail from "./EmailDetail";
 
@@ -146,17 +153,72 @@ export default function EmailListPanel({
       setSelected((current) => (current?.id === emailId ? null : current));
     };
 
+    const onEmailMutated = (event: Event) => {
+      const email = (event as CustomEvent<{ email: Email }>).detail?.email;
+
+      if (!email || cancelled) {
+        return;
+      }
+
+      setEmails((current) => {
+        const result = applyEmailToList(current, email, {
+          mailbox,
+          mailslotId,
+          page,
+          query,
+          pageSize: PAGE_SIZE,
+        });
+
+        if (result.totalDelta !== 0) {
+          queueMicrotask(() => {
+            setTotal((total) => Math.max(0, total + result.totalDelta));
+          });
+        }
+
+        return result.emails;
+      });
+
+      setSelected((current) => {
+        if (current?.id !== email.id) {
+          return current;
+        }
+
+        const stays = mailslotId
+          ? !email.labels.includes("TRASH")
+          : emailMatchesMailbox(email, mailbox);
+
+        return stays ? { ...current, labels: email.labels } : null;
+      });
+    };
+
     window.addEventListener(MAILSLOTS_CHANGED_EVENT, onMailslotsChanged);
     window.addEventListener(EMAILS_CHANGED_EVENT, onEmailsChanged);
     window.addEventListener(EMAIL_HIDDEN_EVENT, onEmailHidden);
+    window.addEventListener(EMAIL_MUTATED_EVENT, onEmailMutated);
+
+    const unsubscribeFailed = window.electronAPI.onEmailActionFailed(
+      ({ email, message }) => {
+        if (cancelled) {
+          return;
+        }
+
+        setError(message);
+
+        if (email) {
+          notifyEmailMutated(email);
+        }
+      }
+    );
 
     return () => {
       cancelled = true;
       window.clearTimeout(reloadTimer);
       unsubscribeStored();
+      unsubscribeFailed();
       window.removeEventListener(MAILSLOTS_CHANGED_EVENT, onMailslotsChanged);
       window.removeEventListener(EMAILS_CHANGED_EVENT, onEmailsChanged);
       window.removeEventListener(EMAIL_HIDDEN_EVENT, onEmailHidden);
+      window.removeEventListener(EMAIL_MUTATED_EVENT, onEmailMutated);
     };
   }, [page, query, mailslotId, mailbox]);
 
@@ -193,28 +255,45 @@ export default function EmailListPanel({
     return `${start}–${end} of ${total}`;
   }, [page, total]);
 
+  const queueStar = (email: Email) => {
+    const starred = !email.labels.includes("STARRED");
+    notifyEmailMutated({
+      ...email,
+      labels: withStarred(email.labels, starred),
+    });
+
+    void window.electronAPI.setEmailStarred({ id: email.id, starred }).catch(
+      (err: unknown) => {
+        notifyEmailMutated(email);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Could not update the star on this message."
+        );
+      }
+    );
+  };
+
   const queueTrashAction = (email: Email) => {
     const restore = mailbox === "trash";
-
-    notifyEmailHidden(email.id);
+    notifyEmailMutated({
+      ...email,
+      labels: restore ? withRestored(email.labels) : withTrashed(email.labels),
+    });
 
     void (restore
       ? window.electronAPI.untrashEmail(email.id)
       : window.electronAPI.trashEmail(email.id)
-    )
-      .then(() => {
-        notifyEmailsChanged();
-      })
-      .catch((err: unknown) => {
-        setError(
-          err instanceof Error
-            ? err.message
-            : restore
-              ? "Could not restore this message."
-              : "Could not move this message to Trash."
-        );
-        notifyEmailsChanged();
-      });
+    ).catch((err: unknown) => {
+      notifyEmailMutated(email);
+      setError(
+        err instanceof Error
+          ? err.message
+          : restore
+            ? "Could not restore this message."
+            : "Could not move this message to Trash."
+      );
+    });
   };
 
   if (selected) {
@@ -224,6 +303,7 @@ export default function EmailListPanel({
         mailbox={mailbox}
         onBack={() => setSelected(null)}
         onTrashAction={queueTrashAction}
+        onStar={queueStar}
       />
     );
   }
@@ -266,6 +346,7 @@ export default function EmailListPanel({
                 void loadPage();
               }}
               onTrashAction={queueTrashAction}
+              onStar={queueStar}
             />
           ))
         )}

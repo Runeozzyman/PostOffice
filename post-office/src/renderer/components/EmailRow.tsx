@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
-import { FiMoreHorizontal, FiRotateCcw, FiTrash2 } from "react-icons/fi";
+import { FiMoreHorizontal, FiRotateCcw, FiStar, FiTrash2 } from "react-icons/fi";
 import type { Email, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { formatListDate } from "../../helpers/formatListDate";
@@ -14,6 +14,7 @@ interface EmailRowProps {
   onOpen: (email: Email) => void;
   onFiled: () => void;
   onTrashAction: (email: Email) => void;
+  onStar: (email: Email) => void;
   animationIndex?: number;
 }
 
@@ -29,6 +30,7 @@ export default function EmailRow({
   onOpen,
   onFiled,
   onTrashAction,
+  onStar,
   animationIndex = 0,
 }: EmailRowProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,6 +101,7 @@ export default function EmailRow({
 
   const color = showMailslotColor ? email.mailslotColor : null;
   const inTrash = mailbox === "trash";
+  const starred = email.labels.includes("STARRED");
 
   const moveTrash = (event: MouseEvent) => {
     event.stopPropagation();
@@ -121,8 +124,24 @@ export default function EmailRow({
         borderLeft: color ? `4px solid ${color}` : undefined,
         backgroundColor: color ? `${color}14` : undefined,
       }}
-      className="email-row-pop flex cursor-pointer items-baseline gap-4 border-b border-line px-4 py-3 hover:bg-hover"
+      className="email-row-pop flex cursor-pointer items-center gap-3 border-b border-line px-4 py-3 hover:bg-hover"
     >
+      <button
+        type="button"
+        aria-label={starred ? "Unstar" : "Star"}
+        aria-pressed={starred}
+        onClick={(event) => {
+          event.stopPropagation();
+          onStar(email);
+        }}
+        className={`shrink-0 rounded-md p-1 ${
+          starred
+            ? "text-amber-400 hover:text-amber-300"
+            : "text-ink-subtle hover:bg-hover hover:text-ink-secondary"
+        }`}
+      >
+        <FiStar size={16} className={starred ? "fill-current" : ""} />
+      </button>
       <span className="w-40 shrink-0 truncate text-sm font-medium text-ink">
         {mailbox === "sent"
           ? displayAddress(email.to) || email.to

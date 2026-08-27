@@ -129,8 +129,13 @@ export async function signInWithGoogle() {
   return tokens;
 }
 
+let cachedClient: InstanceType<typeof google.auth.OAuth2> | null = null;
+let cachedRefreshToken: string | null = null;
+
 export async function signOutWithGoogle(){
   deleteRefreshToken();
+  cachedClient = null;
+  cachedRefreshToken = null;
   console.log("Signed out with Google")
 }
 
@@ -138,7 +143,13 @@ export async function getAuthenticatedClient() {
   const refreshToken = loadRefreshToken();
 
   if (!refreshToken) {
+    cachedClient = null;
+    cachedRefreshToken = null;
     return null;
+  }
+
+  if (cachedClient && cachedRefreshToken === refreshToken) {
+    return cachedClient;
   }
 
   const credentials = JSON.parse(
@@ -156,5 +167,7 @@ export async function getAuthenticatedClient() {
     refresh_token: refreshToken,
   });
 
+  cachedClient = oauth2Client;
+  cachedRefreshToken = refreshToken;
   return oauth2Client;
 }

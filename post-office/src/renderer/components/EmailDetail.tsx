@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers } from "react-icons/fi";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
 import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
@@ -14,6 +14,7 @@ interface EmailDetailProps {
   mailbox: MailboxView;
   onBack: () => void;
   onTrashAction: (email: EmailDetailType) => void;
+  onStar: (email: EmailDetailType) => void;
 }
 
 function formatBytes(size: number) {
@@ -33,11 +34,13 @@ export default function EmailDetail({
   mailbox,
   onBack,
   onTrashAction,
+  onStar,
 }: EmailDetailProps) {
   const { openCompose } = useCompose();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const inTrash = mailbox === "trash";
+  const starred = email.labels.includes("STARRED");
 
   const reply = async (replyAll: boolean) => {
     const accountEmail = await window.electronAPI.getAccountEmail();
@@ -82,6 +85,19 @@ export default function EmailDetail({
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
           {email.subject || "(no subject)"}
         </h1>
+        <button
+          type="button"
+          aria-label={starred ? "Unstar" : "Star"}
+          aria-pressed={starred}
+          onClick={() => onStar(email)}
+          className={`shrink-0 rounded-md p-2 ${
+            starred
+              ? "text-amber-400 hover:bg-hover"
+              : "text-ink-subtle hover:bg-hover hover:text-ink-secondary"
+          }`}
+        >
+          <FiStar size={18} className={starred ? "fill-current" : ""} />
+        </button>
         <div className="flex max-w-[28rem] shrink-0 flex-wrap items-center justify-end gap-2">
           <button
             type="button"
@@ -97,6 +113,7 @@ export default function EmailDetail({
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
           >
             <FiUsers size={14} />
+            Reply all
           </button>
           <button
             type="button"

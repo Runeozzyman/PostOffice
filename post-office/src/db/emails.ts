@@ -380,14 +380,26 @@ export function getEmail(id: string): EmailDetail | null {
   };
 }
 
-export function setEmailLabels(id: string, labels: string[]) {
-  if (!getEmail(id)) {
-    throw new Error("Email was not found in the local database.");
+export function getEmailLabels(id: string): string[] | null {
+  const row = asRow<{ labels: string }>(
+    getDb().prepare(`SELECT labels FROM emails WHERE id = ?`).get(id)
+  );
+
+  if (!row) {
+    return null;
   }
 
-  getDb()
+  return parseLabels(row.labels);
+}
+
+export function setEmailLabels(id: string, labels: string[]) {
+  const result = getDb()
     .prepare(`UPDATE emails SET labels = ? WHERE id = ?`)
     .run(JSON.stringify(labels), id);
+
+  if (result.changes === 0) {
+    throw new Error("Email was not found in the local database.");
+  }
 }
 
 export function getStoredAttachment(

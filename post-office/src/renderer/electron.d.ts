@@ -24,6 +24,16 @@ declare global {
       getEmail: (id: string) => Promise<EmailDetail | null>;
       trashEmail: (id: string) => Promise<boolean>;
       untrashEmail: (id: string) => Promise<boolean>;
+      setEmailStarred: (payload: {
+        id: string;
+        starred: boolean;
+      }) => Promise<boolean>;
+      onEmailActionFailed: (
+        callback: (payload: {
+          email: Email | null;
+          message: string;
+        }) => void
+      ) => () => void;
       sendEmail: (payload: {
         to: string;
         cc?: string;

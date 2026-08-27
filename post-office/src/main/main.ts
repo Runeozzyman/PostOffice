@@ -18,9 +18,15 @@ import {
 import { sendGmailMessage } from "../services/gmailSend";
 import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
+import { setGmailStarred } from "../services/gmailStar";
+import {
+  enqueueGmailLabelSync,
+  nextLabelGeneration,
+} from "../services/gmailBackground";
+import { withRestored, withStarred, withTrashed } from "../helpers/emailLabels";
 import { syncInboxEmails } from "../services/gmailSync";
 import { initDatabase } from "../db/database";
-import { getEmail, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, searchAddressSuggestions } from "../db/emails";
+import { getEmail, getEmailLabels, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, searchAddressSuggestions, setEmailLabels } from "../db/emails";
 import {
   applyMailslotRules,
   createMailslot,
@@ -178,19 +184,71 @@ ipcMain.handle(
   }
 );
 
+function broadcast(channel: string, payload: unknown) {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(channel, payload);
+  }
+}
+
+function scheduleLabelSync(
+  id: string,
+  previousLabels: string[],
+  work: () => Promise<void>
+) {
+  const gen = nextLabelGeneration(id);
+  enqueueGmailLabelSync(id, gen, previousLabels, work, (error) => {
+    const email = getEmail(id);
+    broadcast("email-action-failed", {
+      email,
+      message: error.message,
+    });
+  });
+}
+
 ipcMain.handle("get-email", async (_event, id: string) => {
   return getEmail(id);
 });
 
 ipcMain.handle("trash-email", async (_event, id: string) => {
-  await trashGmailMessage(id);
+  const previous = getEmailLabels(id);
+
+  if (!previous) {
+    throw new Error("Email was not found in the local database.");
+  }
+
+  setEmailLabels(id, withTrashed(previous));
+  scheduleLabelSync(id, previous, () => trashGmailMessage(id));
   return true;
 });
 
 ipcMain.handle("untrash-email", async (_event, id: string) => {
-  await untrashGmailMessage(id);
+  const previous = getEmailLabels(id);
+
+  if (!previous) {
+    throw new Error("Email was not found in the local database.");
+  }
+
+  setEmailLabels(id, withRestored(previous));
+  scheduleLabelSync(id, previous, () => untrashGmailMessage(id));
   return true;
 });
+
+ipcMain.handle(
+  "set-email-starred",
+  async (_event, payload: { id: string; starred: boolean }) => {
+    const previous = getEmailLabels(payload.id);
+
+    if (!previous) {
+      throw new Error("Email was not found in the local database.");
+    }
+
+    setEmailLabels(payload.id, withStarred(previous, payload.starred));
+    scheduleLabelSync(payload.id, previous, () =>
+      setGmailStarred(payload.id, payload.starred)
+    );
+    return true;
+  }
+);
 
 ipcMain.handle(
   "send-email",

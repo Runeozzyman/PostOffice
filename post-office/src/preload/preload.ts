@@ -99,6 +99,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
   untrashEmail: (id: string): Promise<boolean> =>
     ipcRenderer.invoke("untrash-email", id),
 
+  setEmailStarred: (payload: {
+    id: string;
+    starred: boolean;
+  }): Promise<boolean> => ipcRenderer.invoke("set-email-starred", payload),
+
+  onEmailActionFailed: (
+    callback: (payload: {
+      email: Email | null;
+      message: string;
+    }) => void
+  ) => {
+    const listener = (
+      _event: unknown,
+      payload: { email: Email | null; message: string }
+    ) => {
+      callback(payload);
+    };
+
+    ipcRenderer.on("email-action-failed", listener);
+
+    return () => {
+      ipcRenderer.removeListener("email-action-failed", listener);
+    };
+  },
+
   sendEmail: (payload: {
     to: string;
     cc?: string;
