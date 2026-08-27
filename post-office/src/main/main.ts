@@ -67,6 +67,8 @@ const createWindow = () => {
     height: 800,
     minWidth: 800,
     minHeight: 500,
+    icon: path.join(__dirname, "../src/assets/icon.png"),
+    title: "PostOffice",
 
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
