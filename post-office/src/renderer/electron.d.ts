@@ -1,4 +1,4 @@
-import type { ComposeAttachment } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft, StoredDraft } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -35,6 +35,10 @@ declare global {
           message: string;
         }) => void
       ) => () => void;
+      listDrafts: () => Promise<StoredDraft[]>;
+      getDraft: (id: string) => Promise<StoredDraft | null>;
+      saveDraft: (payload: ComposeDraft) => Promise<StoredDraft | null>;
+      deleteDraft: (id: string) => Promise<boolean>;
       sendEmail: (payload: {
         to: string;
         cc?: string;

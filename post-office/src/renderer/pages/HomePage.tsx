@@ -6,6 +6,7 @@ import Mailslots from "./Mailslots";
 import Settings from "./Settings";
 import Starred from "./Starred";
 import Sent from "./Sent";
+import Drafts from "./Drafts";
 import Trash from "./Trash";
 
 import { useState } from "react";
@@ -42,6 +43,13 @@ const HomePage = () => {
           }
         >
           <Sent />
+        </div>
+        <div
+          className={
+            currentPage === "drafts" ? "h-full min-w-0" : "hidden"
+          }
+        >
+          <Drafts />
         </div>
         <div
           className={

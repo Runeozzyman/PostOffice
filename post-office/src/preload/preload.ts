@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
-import type { ComposeAttachment } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft, StoredDraft } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -124,6 +124,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.removeListener("email-action-failed", listener);
     };
   },
+
+  listDrafts: (): Promise<StoredDraft[]> =>
+    ipcRenderer.invoke("list-drafts"),
+
+  getDraft: (id: string): Promise<StoredDraft | null> =>
+    ipcRenderer.invoke("get-draft", id),
+
+  saveDraft: (payload: ComposeDraft): Promise<StoredDraft | null> =>
+    ipcRenderer.invoke("save-draft", payload),
+
+  deleteDraft: (id: string): Promise<boolean> =>
+    ipcRenderer.invoke("delete-draft", id),
 
   sendEmail: (payload: {
     to: string;

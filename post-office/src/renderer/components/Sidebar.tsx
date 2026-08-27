@@ -8,6 +8,7 @@ import {
   FiChevronRight,
   FiMail,
   FiTrash2,
+  FiEdit3,
 } from "react-icons/fi";
 
 interface SidebarProps {
@@ -93,6 +94,15 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
           collapsed={collapsed}
           onClick={() => {
             setCurrentPage("sent");
+          }}
+        />
+
+        <SidebarItem
+          icon={<FiEdit3 size={18} />}
+          label="Drafts"
+          collapsed={collapsed}
+          onClick={() => {
+            setCurrentPage("drafts");
           }}
         />
 

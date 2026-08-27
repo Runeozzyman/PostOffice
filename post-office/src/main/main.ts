@@ -36,6 +36,13 @@ import {
   listMailslots,
   updateMailslot,
 } from "../db/mailslots";
+import {
+  deleteDraft,
+  getDraft,
+  listDrafts,
+  saveDraft,
+} from "../db/drafts";
+import type { ComposeDraft } from "../types/compose";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -344,6 +351,35 @@ ipcMain.handle(
       .filter((item): item is ComposeAttachment => Boolean(item));
   }
 );
+
+ipcMain.handle("list-drafts", async () => {
+  return listDrafts();
+});
+
+ipcMain.handle("get-draft", async (_event, id: string) => {
+  return typeof id === "string" ? getDraft(id) : null;
+});
+
+ipcMain.handle("save-draft", async (_event, payload: ComposeDraft) => {
+  return saveDraft({
+    id: payload?.id,
+    to: payload?.to ?? "",
+    cc: payload?.cc,
+    bcc: payload?.bcc,
+    subject: payload?.subject ?? "",
+    body: payload?.body ?? "",
+    threadId: payload?.threadId,
+    inReplyToMessageId: payload?.inReplyToMessageId,
+    attachments: payload?.attachments,
+  });
+});
+
+ipcMain.handle("delete-draft", async (_event, id: string) => {
+  if (typeof id === "string" && id) {
+    deleteDraft(id);
+  }
+  return true;
+});
 
 ipcMain.handle("suggest-addresses", async (_event, query: string) => {
   return searchAddressSuggestions(typeof query === "string" ? query : "");

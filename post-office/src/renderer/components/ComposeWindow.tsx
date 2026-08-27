@@ -1,4 +1,4 @@
-import { useEffect, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
   FiMaximize2,
   FiMinimize2,
@@ -7,6 +7,7 @@ import {
   FiX,
 } from "react-icons/fi";
 import { useCompose } from "../context/ComposeContext";
+import { notifyDraftsChanged } from "../helpers/draftEvents";
 import { notifyEmailsChanged } from "../helpers/emailEvents";
 import { GMAIL_MAX_ATTACHMENT_BYTES } from "../../helpers/gmailLimits";
 import type { ComposeAttachment } from "../../types/compose";
@@ -33,25 +34,115 @@ function formatBytes(size: number) {
 }
 
 export default function ComposeWindow() {
-  const { mode, sessionId, seed, minimize, restore, fullscreen, close } =
-    useCompose();
+  const {
+    mode,
+    sessionId,
+    seed,
+    registerPersist,
+    setActiveDraftId,
+    minimize,
+    restore,
+    fullscreen,
+    close,
+  } = useCompose();
   const [draft, setDraft] = useState(emptyDraft);
   const [attachments, setAttachments] = useState<ComposeAttachment[]>([]);
   const [threadId, setThreadId] = useState<string | undefined>();
   const [inReplyToMessageId, setInReplyToMessageId] = useState<
     string | undefined
   >();
+  const [draftId, setDraftId] = useState("");
   const [showCc, setShowCc] = useState(false);
   const [sending, setSending] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ignoreSavesRef = useRef(false);
+  const latestRef = useRef({
+    draft: emptyDraft,
+    attachments: [] as ComposeAttachment[],
+    threadId: undefined as string | undefined,
+    inReplyToMessageId: undefined as string | undefined,
+    draftId: "",
+  });
+
+  latestRef.current = {
+    draft,
+    attachments,
+    threadId,
+    inReplyToMessageId,
+    draftId,
+  };
+
+  const persist = useCallback(
+    async (options?: { notify?: boolean }) => {
+      if (ignoreSavesRef.current) {
+        return;
+      }
+
+      const current = latestRef.current;
+      const empty =
+        !current.draft.to.trim() &&
+        !current.draft.cc.trim() &&
+        !current.draft.bcc.trim() &&
+        !current.draft.subject.trim() &&
+        !current.draft.body.trim() &&
+        current.attachments.length === 0;
+
+      if (empty && !current.draftId) {
+        return;
+      }
+
+      const saved = await window.electronAPI.saveDraft({
+        id: current.draftId || undefined,
+        to: current.draft.to,
+        cc: current.draft.cc,
+        bcc: current.draft.bcc,
+        subject: current.draft.subject,
+        body: current.draft.body,
+        threadId: current.threadId,
+        inReplyToMessageId: current.inReplyToMessageId,
+        attachments: current.attachments,
+      });
+
+      const nextId = saved?.id ?? "";
+      if (nextId !== current.draftId) {
+        setDraftId(nextId);
+        setActiveDraftId(nextId);
+      }
+
+      if (saved) {
+        const pathsChanged =
+          saved.attachments.length !== current.attachments.length ||
+          saved.attachments.some(
+            (item, index) => item.path !== current.attachments[index]?.path
+          );
+        if (pathsChanged) {
+          setAttachments(saved.attachments);
+        }
+      }
+
+      const created = !current.draftId && Boolean(nextId);
+      const removed = Boolean(current.draftId) && !nextId;
+      if (options?.notify !== false || created || removed) {
+        notifyDraftsChanged();
+      }
+    },
+    [setActiveDraftId]
+  );
+
+  useEffect(() => {
+    registerPersist(() => persist({ notify: true }));
+    return () => registerPersist(null);
+  }, [persist, registerPersist]);
 
   useEffect(() => {
     if (mode === "closed") {
+      ignoreSavesRef.current = false;
       setDraft(emptyDraft);
       setAttachments([]);
       setThreadId(undefined);
       setInReplyToMessageId(undefined);
+      setDraftId("");
       setShowCc(false);
       setSending(false);
       setDragging(false);
@@ -64,6 +155,7 @@ export default function ComposeWindow() {
       return;
     }
 
+    ignoreSavesRef.current = false;
     setDraft({
       to: seed?.to ?? "",
       cc: seed?.cc ?? "",
@@ -71,36 +163,54 @@ export default function ComposeWindow() {
       subject: seed?.subject ?? "",
       body: seed?.body ?? "",
     });
-    setAttachments([]);
+    setAttachments(seed?.attachments ?? []);
     setThreadId(seed?.threadId);
     setInReplyToMessageId(seed?.inReplyToMessageId);
+    setDraftId(seed?.id ?? "");
     setShowCc(Boolean(seed?.cc || seed?.bcc));
     setSending(false);
     setDragging(false);
     setError(null);
   }, [sessionId, seed]);
 
+  useEffect(() => {
+    if (mode === "closed" || sessionId === 0) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void persist({ notify: false }).catch((err: unknown) => {
+        setError(
+          err instanceof Error ? err.message : "Could not save this draft."
+        );
+      });
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    attachments,
+    draft,
+    inReplyToMessageId,
+    mode,
+    persist,
+    sessionId,
+    threadId,
+  ]);
+
   if (mode === "closed") {
     return null;
   }
 
-  const dirty =
-    draft.to.trim() ||
-    draft.cc.trim() ||
-    draft.bcc.trim() ||
-    draft.subject.trim() ||
-    draft.body.trim() ||
-    attachments.length > 0;
-
   const requestClose = () => {
-    if (
-      dirty &&
-      !window.confirm("Discard this message? It will not be saved.")
-    ) {
-      return;
-    }
-
-    close();
+    void persist({ notify: true })
+      .then(() => {
+        close();
+      })
+      .catch((err: unknown) => {
+        setError(
+          err instanceof Error ? err.message : "Could not save this draft."
+        );
+      });
   };
 
   const addAttachments = (incoming: ComposeAttachment[]) => {
@@ -182,7 +292,16 @@ export default function ComposeWindow() {
         inReplyToMessageId,
         attachments,
       });
+      ignoreSavesRef.current = true;
+      try {
+        if (latestRef.current.draftId) {
+          await window.electronAPI.deleteDraft(latestRef.current.draftId);
+        }
+      } catch {
+        // The message was sent; keep compose from recreating the draft.
+      }
       notifyEmailsChanged();
+      notifyDraftsChanged();
       close();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not send this message.");

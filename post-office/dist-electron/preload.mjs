@@ -45,6 +45,10 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 			electron.ipcRenderer.removeListener("email-action-failed", listener);
 		};
 	},
+	listDrafts: () => electron.ipcRenderer.invoke("list-drafts"),
+	getDraft: (id) => electron.ipcRenderer.invoke("get-draft", id),
+	saveDraft: (payload) => electron.ipcRenderer.invoke("save-draft", payload),
+	deleteDraft: (id) => electron.ipcRenderer.invoke("delete-draft", id),
 	sendEmail: (payload) => electron.ipcRenderer.invoke("send-email", payload),
 	pickComposeAttachments: () => electron.ipcRenderer.invoke("pick-compose-attachments"),
 	composeAttachmentsFromPaths: (filePaths) => electron.ipcRenderer.invoke("compose-attachments-from-paths", filePaths),

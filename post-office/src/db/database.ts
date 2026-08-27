@@ -130,6 +130,32 @@ function migrate(database: DatabaseSync) {
   `);
 
   collapseExclusiveMailslots(database);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS drafts (
+      id TEXT PRIMARY KEY,
+      "to" TEXT NOT NULL DEFAULT '',
+      cc TEXT NOT NULL DEFAULT '',
+      bcc TEXT NOT NULL DEFAULT '',
+      subject TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      thread_id TEXT NOT NULL DEFAULT '',
+      in_reply_to_message_id TEXT NOT NULL DEFAULT '',
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS draft_attachments (
+      id TEXT PRIMARY KEY,
+      draft_id TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size INTEGER NOT NULL DEFAULT 0,
+      stored_path TEXT NOT NULL,
+      FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE
+    )
+  `);
 }
 
 function collapseExclusiveMailslots(database: DatabaseSync) {
