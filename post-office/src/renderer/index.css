@@ -17,6 +17,7 @@
   --color-on-ink: var(--on-ink);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--app-font);
 }
 
 :root {
@@ -71,7 +72,10 @@ html.theme-transition *:not(iframe) {
 }
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --app-font-size: 16px;
+  --app-font: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: var(--app-font);
+  font-size: var(--app-font-size);
   line-height: 1.5;
   font-weight: 400;
   color: var(--ink);
@@ -93,7 +97,10 @@ body {
   color: var(--ink);
 }
 
-button {
+button,
+input,
+textarea,
+select {
   font: inherit;
 }
 

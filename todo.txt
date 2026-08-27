@@ -1,13 +1,13 @@
 (A) 2026-08-26 Allow for compilation of multiple emails
 (A) 2026-08-26 Add drafts folder for unfinished emails
 (B) 2026-08-26 Reduce performance hit of debounded address recommendations
-(B) 2026-08-26 Allow for changing of font and font size
 (B) 2026-08-26 Add image rendering in email
 (C) 2026-08-26 Create selectable themes
 
 
 
 ------------------------------------------------------------------------------------------------------
+x (B) 2026-08-26 2026-08-26 Allow for changing of font and font size
 x (B) 2026-08-26 2026-08-25 Add support for sending attachments
 x (B) 2026-08-26 2026-08-26 Reduce performance hit of debounded address recommendations
 x (C) 2026-08-26 2026-08-15 Make mailslot cards re-organizable by dragging

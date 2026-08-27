@@ -7,11 +7,29 @@
     <title>PostOffice</title>
     <script>
       try {
+        var root = document.documentElement;
         if (localStorage.getItem("postoffice.theme") === "dark") {
-          document.documentElement.classList.add("dark");
+          root.classList.add("dark");
+        }
+        var fonts = {
+          default: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+          segoe: '"Segoe UI", system-ui, sans-serif',
+          calibri: 'Calibri, Carlito, "Segoe UI", sans-serif',
+          georgia: "Georgia, serif",
+          palatino: '"Palatino Linotype", Palatino, "Book Antiqua", serif',
+          verdana: "Verdana, Geneva, sans-serif",
+          trebuchet: '"Trebuchet MS", "Segoe UI", sans-serif',
+        };
+        var font = localStorage.getItem("postoffice.font");
+        if (font && fonts[font]) {
+          root.style.setProperty("--app-font", fonts[font]);
+        }
+        var size = Number(localStorage.getItem("postoffice.fontSize"));
+        if (size >= 14 && size <= 22) {
+          root.style.setProperty("--app-font-size", size + "px");
         }
       } catch (error) {
-        // Theme will be applied after React loads.
+        // Preferences will be applied after React loads.
       }
     </script>
   </head>
