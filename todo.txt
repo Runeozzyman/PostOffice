@@ -1,12 +1,8 @@
 (A) 2026-08-26 Allow for compilation of multiple emails
-(A) 2026-08-26 Add drafts folder for unfinished emails
-(B) 2026-08-26 Reduce performance hit of debounded address recommendations
 (B) 2026-08-26 Add image rendering in email
 (C) 2026-08-26 Create selectable themes
-
-
-
 ------------------------------------------------------------------------------------------------------
+x (A) 2026-08-26 2026-08-26 Add drafts folder for unfinished emails
 x (B) 2026-08-26 2026-08-26 Allow for changing of font and font size
 x (B) 2026-08-26 2026-08-25 Add support for sending attachments
 x (B) 2026-08-26 2026-08-26 Reduce performance hit of debounded address recommendations
@@ -18,4 +14,3 @@ x (A) 2026-08-25 2026-08-15 Create SQLite database to store user data locally (m
 x (A) 2026-08-25 2026-08-13 Implement page/components to display pulled emails in electron @renderer
 x (A) 2026-08-14 2026-08-13 Implement method to perform a full email sync (pull all emails) @google.ts
 x (B) 2026-08-15 2026 08-15 Implement collapsible side bar component
-
