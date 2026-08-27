@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers } from "react-icons/fi";
+import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers} from "react-icons/fi";
+import { IoArrowBackSharp } from "react-icons/io5";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
 import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
@@ -80,7 +81,7 @@ export default function EmailDetail({
           onClick={onBack}
           className="shrink-0 text-sm text-ink-secondary hover:cursor-pointer hover:text-ink"
         >
-          Back
+          <IoArrowBackSharp size={20}/>
         </button>
         <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
           {email.subject || "(no subject)"}
