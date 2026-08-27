@@ -1,44 +1,16 @@
-import { useEffect, useState } from "react";
 import ComposeButton from "../components/ComposeButton";
+import RefreshButton from "../components/RefreshButton";
 import EmailListPanel from "../components/EmailListPanel";
+import { useMailSync } from "../context/MailSyncContext";
 
 export default function Inbox() {
-  const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [storedThisRun, setStoredThisRun] = useState(0);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const unsubscribeProgress = window.electronAPI.onSyncProgress((progress) => {
-      setStoredThisRun(progress.storedThisRun);
-    });
-
-    setSyncing(true);
-
-    void window.electronAPI
-      .syncEmails()
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setSyncing(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      unsubscribeProgress();
-    };
-  }, []);
+  const { syncing, storedThisRun, error } = useMailSync();
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
       <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
         <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Inbox</h1>
+        <RefreshButton />
         <ComposeButton />
       </div>
       {error && (
@@ -46,7 +18,7 @@ export default function Inbox() {
       )}
       {syncing && (
         <p className="shrink-0 px-4 py-2 text-sm text-ink-muted">
-          Syncing all missing mail…
+          Checking for new mail…
           {storedThisRun > 0 ? ` ${storedThisRun} new messages stored.` : ""}
         </p>
       )}

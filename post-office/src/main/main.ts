@@ -102,15 +102,27 @@ ipcMain.handle(
   }
 );
 
+let mailboxSyncInFlight = false;
+
 ipcMain.handle("sync-emails", async (event) => {
-  return await syncInboxEmails(
-    (email) => {
-      event.sender.send("email-stored", email);
-    },
-    (progress) => {
-      event.sender.send("sync-progress", progress);
-    }
-  );
+  if (mailboxSyncInFlight) {
+    return;
+  }
+
+  mailboxSyncInFlight = true;
+
+  try {
+    return await syncInboxEmails(
+      (email) => {
+        event.sender.send("email-stored", email);
+      },
+      (progress) => {
+        event.sender.send("sync-progress", progress);
+      }
+    );
+  } finally {
+    mailboxSyncInFlight = false;
+  }
 });
 
 ipcMain.handle("list-mailslots", async () => {

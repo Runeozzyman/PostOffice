@@ -1,4 +1,5 @@
 import { ComposeProvider } from "./context/ComposeContext";
+import { MailSyncProvider } from "./context/MailSyncContext";
 import LoginScreen from "./pages/LoginScreen";
 import HomePage from "./pages/HomePage";
 import { useAuth } from "./context/AuthContext";
@@ -20,7 +21,9 @@ function App() {
 
   return (
     <ComposeProvider>
-      <HomePage />
+      <MailSyncProvider>
+        <HomePage />
+      </MailSyncProvider>
     </ComposeProvider>
   );
 }
