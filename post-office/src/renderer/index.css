@@ -38,6 +38,7 @@
   --danger-soft: #f4ece6;
 }
 
+html.theme-dark,
 html.dark {
   color-scheme: dark;
   --page: #12151a;
@@ -56,12 +57,21 @@ html.dark {
   --danger-soft: #3a1f22;
 }
 
-html.theme-transition,
-html.theme-transition *:not(iframe) {
+
+html.theme-transition:not(.reduce-motion),
+html.theme-transition:not(.reduce-motion) *:not(iframe) {
   transition-property: background-color, color, border-color, fill, stroke,
     box-shadow;
   transition-duration: 280ms;
   transition-timing-function: ease;
+}
+
+html.reduce-motion .mailslot-pop {
+  transition: none;
+}
+
+html.reduce-motion .mailslot-pop:hover {
+  transform: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -117,15 +127,15 @@ select {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .email-row-pop {
+  html:not(.reduce-motion) .email-row-pop {
     animation: email-pop-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .mailslot-pop {
+  html:not(.reduce-motion) .mailslot-pop {
     animation: email-pop-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .compose-shell {
+  html:not(.reduce-motion) .compose-shell {
     transition:
       top 320ms cubic-bezier(0.22, 1, 0.36, 1),
       right 320ms cubic-bezier(0.22, 1, 0.36, 1),

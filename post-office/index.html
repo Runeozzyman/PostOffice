@@ -8,7 +8,13 @@
     <script>
       try {
         var root = document.documentElement;
-        if (localStorage.getItem("postoffice.theme") === "dark") {
+        var theme = localStorage.getItem("postoffice.theme") || "light";
+        if (!/^[a-z][a-z0-9-]*$/.test(theme)) {
+          theme = "light";
+        }
+        root.classList.add("theme-" + theme);
+        var darkThemes = { dark: true };
+        if (darkThemes[theme]) {
           root.classList.add("dark");
         }
         var fonts = {
@@ -27,6 +33,9 @@
         var size = Number(localStorage.getItem("postoffice.fontSize"));
         if (size >= 14 && size <= 22) {
           root.style.setProperty("--app-font-size", size + "px");
+        }
+        if (localStorage.getItem("postoffice.animations") === "off") {
+          root.classList.add("reduce-motion");
         }
       } catch (error) {
         // Preferences will be applied after React loads.

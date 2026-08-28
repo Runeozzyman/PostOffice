@@ -2,6 +2,7 @@ import SettingsGroup from "../components/SettingsGroup";
 import SettingsToggle from "../components/SettingsToggle";
 import SignOutButton from "../components/SignOutButton";
 import { usePreferences } from "../context/PreferencesContext";
+import { APP_THEMES } from "../helpers/theme";
 import {
   APP_FONTS,
   FONT_SIZE_MAX,
@@ -9,8 +10,16 @@ import {
 } from "../helpers/typography";
 
 export default function Settings() {
-  const { theme, setTheme, font, setFont, fontSize, setFontSize } =
-    usePreferences();
+  const {
+    theme,
+    setTheme,
+    animationsEnabled,
+    setAnimationsEnabled,
+    font,
+    setFont,
+    fontSize,
+    setFontSize,
+  } = usePreferences();
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
@@ -23,25 +32,63 @@ export default function Settings() {
             title="Appearance"
             description="How PostOffice looks on this device."
           >
-            <div className="flex items-center justify-between gap-4 px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-ink">Dark mode</p>
-                <p className="text-sm text-ink-muted">
-                  Use a darker palette across the app.
-                </p>
+            <div className="px-4 py-3">
+              <p className="text-sm font-medium text-ink">Theme</p>
+              <p className="mb-3 text-sm text-ink-muted">
+                Choose a colour palette for the app chrome.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {APP_THEMES.map((option) => {
+                  const selected = theme === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTheme(option.id)}
+                      aria-pressed={selected}
+                      aria-label={option.label}
+                      title={option.label}
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                      <span
+                        className={`h-8 w-8 rounded-full border-2 ${
+                          selected
+                            ? "border-ink"
+                            : "border-line-strong hover:border-ink-subtle"
+                        }`}
+                        style={{ backgroundColor: option.swatch }}
+                      />
+                      <span
+                        className={`text-xs ${
+                          selected ? "text-ink" : "text-ink-muted"
+                        }`}
+                      >
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              <SettingsToggle
-                label="Dark mode"
-                checked={theme === "dark"}
-                onChange={(checked) => setTheme(checked ? "dark" : "light")}
-              />
             </div>
           </SettingsGroup>
 
           <SettingsGroup
             title="Personalization"
-            description="Text size and typeface on this device."
+            description="Text size, typeface, and motion on this device."
           >
+            <div className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink">Disable animations</p>
+                <p className="text-sm text-ink-muted">
+                  Skip the inbox row cascade and mailslot tile entrance.
+                </p>
+              </div>
+              <SettingsToggle
+                label="Disable animations"
+                checked={!animationsEnabled}
+                onChange={(disabled) => setAnimationsEnabled(!disabled)}
+              />
+            </div>
             <div className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-ink">Text size</p>

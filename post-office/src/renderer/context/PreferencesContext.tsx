@@ -14,6 +14,11 @@ import {
   type Theme,
 } from "../helpers/theme";
 import {
+  applyMotionClass,
+  readStoredAnimationsEnabled,
+  storeAnimationsEnabled,
+} from "../helpers/motion";
+import {
   applyTypography,
   clampFontSize,
   readStoredFont,
@@ -26,6 +31,8 @@ import {
 interface PreferencesContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  animationsEnabled: boolean;
+  setAnimationsEnabled: (enabled: boolean) => void;
   font: AppFontId;
   setFont: (font: AppFontId) => void;
   fontSize: number;
@@ -42,6 +49,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyThemeClass(initial);
     return initial;
   });
+  const [animationsEnabled, setAnimationsEnabledState] = useState(() => {
+    const initial = readStoredAnimationsEnabled();
+    applyMotionClass(initial);
+    return initial;
+  });
+  const animationsEnabledRef = useRef(animationsEnabled);
+  animationsEnabledRef.current = animationsEnabled;
   const [font, setFontState] = useState<AppFontId>(() => readStoredFont());
   const [fontSize, setFontSizeState] = useState<number>(() => {
     const initialFont = readStoredFont();
@@ -56,9 +70,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const setTheme = useCallback((next: Theme) => {
     const root = document.documentElement;
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    const reduceMotion =
+      !animationsEnabledRef.current ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (!reduceMotion) {
       root.classList.add("theme-transition");
@@ -70,6 +84,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyThemeClass(next);
     storeTheme(next);
     setThemeState(next);
+  }, []);
+
+  const setAnimationsEnabled = useCallback((enabled: boolean) => {
+    applyMotionClass(enabled);
+    storeAnimationsEnabled(enabled);
+    setAnimationsEnabledState(enabled);
   }, []);
 
   const setFont = useCallback((next: AppFontId) => {
@@ -86,8 +106,26 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ theme, setTheme, font, setFont, fontSize, setFontSize }),
-    [theme, setTheme, font, setFont, fontSize, setFontSize]
+    () => ({
+      theme,
+      setTheme,
+      animationsEnabled,
+      setAnimationsEnabled,
+      font,
+      setFont,
+      fontSize,
+      setFontSize,
+    }),
+    [
+      theme,
+      setTheme,
+      animationsEnabled,
+      setAnimationsEnabled,
+      font,
+      setFont,
+      fontSize,
+      setFontSize,
+    ]
   );
 
   return (
