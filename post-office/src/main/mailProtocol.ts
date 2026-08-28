@@ -4,7 +4,6 @@ import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
 export interface MailWorkerInit {
   userDataPath: string;
-  credentialsPath: string;
   refreshToken: string | null;
 }
 

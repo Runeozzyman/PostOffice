@@ -1,16 +1,14 @@
-import { n as require_src, t as mimeFromFilename } from "./mimeFromFilename-HyEp37jY.js";
+import { n as getOAuthClientCredentials, r as require_src, t as mimeFromFilename } from "./mimeFromFilename-DtY95VFN.js";
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
 //#region src/auth/gmailSession.ts
 var import_src = require_src();
-var credentialsPath = "";
 var refreshToken = null;
 var cachedClient = null;
 var cachedRefreshToken = null;
 function configureGmailSession(options) {
-	credentialsPath = options.credentialsPath;
 	setGmailRefreshToken(options.refreshToken);
 }
 function setGmailRefreshToken(token) {
@@ -25,8 +23,8 @@ async function getAuthenticatedClient() {
 		return null;
 	}
 	if (cachedClient && cachedRefreshToken === refreshToken) return cachedClient;
-	const { client_id, client_secret } = JSON.parse(fs.readFileSync(credentialsPath, "utf-8")).installed;
-	const oauth2Client = new import_src.google.auth.OAuth2(client_id, client_secret);
+	const { clientId, clientSecret } = getOAuthClientCredentials();
+	const oauth2Client = new import_src.google.auth.OAuth2(clientId, clientSecret);
 	oauth2Client.setCredentials({ refresh_token: refreshToken });
 	cachedClient = oauth2Client;
 	cachedRefreshToken = refreshToken;
@@ -1684,10 +1682,7 @@ parentPort().on("message", (event) => {
 	if (message?.kind === "init") {
 		try {
 			setUserDataPath(message.init.userDataPath);
-			configureGmailSession({
-				credentialsPath: message.init.credentialsPath,
-				refreshToken: message.init.refreshToken
-			});
+			configureGmailSession({ refreshToken: message.init.refreshToken });
 			initDatabase();
 			backfillSenderFields();
 			rebuildAddressContactsCache();

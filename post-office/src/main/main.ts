@@ -10,7 +10,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  CREDENTIALS_PATH,
   signInWithGoogle,
   signOutWithGoogle,
 } from "../auth/google";
@@ -359,7 +358,6 @@ ipcMain.handle("google-sign-in", async () => {
 app.whenReady().then(async () => {
   await startMailRuntime({
     userDataPath: app.getPath("userData"),
-    credentialsPath: CREDENTIALS_PATH,
     refreshToken: loadRefreshToken(),
   });
   createWindow();

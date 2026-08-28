@@ -1,4 +1,4 @@
-import { n as require_src, t as mimeFromFilename } from "./mimeFromFilename-HyEp37jY.js";
+import { n as getOAuthClientCredentials, r as require_src, t as mimeFromFilename } from "./mimeFromFilename-DtY95VFN.js";
 import { BrowserWindow, app, dialog, ipcMain, safeStorage, shell, utilityProcess } from "electron";
 import fs from "node:fs";
 import path from "node:path";
@@ -39,10 +39,9 @@ var SCOPES = [
 	"https://www.googleapis.com/auth/gmail.send",
 	"https://www.googleapis.com/auth/gmail.settings.basic"
 ];
-var CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
 async function signInWithGoogle() {
 	console.log("Starting Google OAuth...");
-	const { client_id, client_secret } = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, "utf-8")).installed;
+	const { clientId, clientSecret } = getOAuthClientCredentials();
 	const server = http.createServer();
 	await new Promise((resolve) => {
 		server.listen(0, "127.0.0.1", () => {
@@ -53,7 +52,7 @@ async function signInWithGoogle() {
 	if (!address || typeof address === "string") throw new Error("Failed to start OAuth callback server.");
 	const redirectUri = `http://127.0.0.1:${address.port}`;
 	console.log(`OAuth callback listening on ${redirectUri}`);
-	const oauth2Client = new import_src.google.auth.OAuth2(client_id, client_secret, redirectUri);
+	const oauth2Client = new import_src.google.auth.OAuth2(clientId, clientSecret, redirectUri);
 	const authUrl = oauth2Client.generateAuthUrl({
 		access_type: "offline",
 		prompt: "consent",
@@ -65,7 +64,7 @@ async function signInWithGoogle() {
 		server.on("request", (req, res) => {
 			if (!req.url) return;
 			const url = new URL(req.url, redirectUri);
-			const code = url.searchParams.get("code");
+			const authCode = url.searchParams.get("code");
 			const error = url.searchParams.get("error");
 			if (error) {
 				res.end("Authorization failed. You can close this window.");
@@ -73,10 +72,10 @@ async function signInWithGoogle() {
 				reject(new Error(error));
 				return;
 			}
-			if (code) {
+			if (authCode) {
 				res.end("Authorization successful! You can close this window.");
 				server.close();
-				resolve(code);
+				resolve(authCode);
 			}
 		});
 	});
@@ -370,7 +369,6 @@ ipcMain.handle("google-sign-in", async () => {
 app.whenReady().then(async () => {
 	await startMailRuntime({
 		userDataPath: app.getPath("userData"),
-		credentialsPath: CREDENTIALS_PATH,
 		refreshToken: loadRefreshToken()
 	});
 	createWindow();

@@ -317,7 +317,6 @@ port.on("message", (event) => {
     try {
       setUserDataPath(message.init.userDataPath);
       configureGmailSession({
-        credentialsPath: message.init.credentialsPath,
         refreshToken: message.init.refreshToken,
       });
       initDatabase();

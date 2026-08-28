@@ -1,9 +1,8 @@
 import { google } from "googleapis";
-import fs from "node:fs";
-import path from "node:path";
 import http from "node:http";
 import { shell } from "electron";
 import { saveRefreshToken, deleteRefreshToken } from "./tokenStorage";
+import { getOAuthClientCredentials } from "./oauthCredentials";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.modify",
@@ -11,17 +10,10 @@ const SCOPES = [
   "https://www.googleapis.com/auth/gmail.settings.basic",
 ];
 
-export const CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
-
 export async function signInWithGoogle() {
   console.log("Starting Google OAuth...");
 
-  // Read our Google OAuth credentials
-  const credentials = JSON.parse(
-    fs.readFileSync(CREDENTIALS_PATH, "utf-8")
-  );
-
-  const { client_id, client_secret } = credentials.installed;
+  const { clientId, clientSecret } = getOAuthClientCredentials();
 
   /*
    * Start a temporary local HTTP server.
@@ -49,14 +41,12 @@ export async function signInWithGoogle() {
 
   console.log(`OAuth callback listening on ${redirectUri}`);
 
-  // Create our OAuth client
   const oauth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
+    clientId,
+    clientSecret,
     redirectUri
   );
 
-  // Generate Google's login/authorization URL
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
@@ -77,12 +67,9 @@ export async function signInWithGoogle() {
         return;
       }
 
-      const url = new URL(
-        req.url,
-        redirectUri
-      );
+      const url = new URL(req.url, redirectUri);
 
-      const code = url.searchParams.get("code");
+      const authCode = url.searchParams.get("code");
       const error = url.searchParams.get("error");
 
       if (error) {
@@ -95,14 +82,12 @@ export async function signInWithGoogle() {
         return;
       }
 
-      if (code) {
-        res.end(
-          "Authorization successful! You can close this window."
-        );
+      if (authCode) {
+        res.end("Authorization successful! You can close this window.");
 
         server.close();
 
-        resolve(code);
+        resolve(authCode);
       }
     });
   });
