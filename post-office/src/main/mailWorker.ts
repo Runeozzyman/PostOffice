@@ -290,6 +290,7 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
 
       return {
         filename: stored.filename,
+        mimeType: stored.mimeType,
         dataBase64: Buffer.from(bytes).toString("base64"),
       };
     }

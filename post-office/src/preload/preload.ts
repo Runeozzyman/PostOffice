@@ -167,6 +167,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   listSignatures: (): Promise<GmailSignature[]> =>
     ipcRenderer.invoke("list-signatures"),
 
+  getAttachment: (payload: {
+    messageId: string;
+    attachmentId: string;
+  }): Promise<{ filename: string; mimeType: string; dataBase64: string }> =>
+    ipcRenderer.invoke("get-attachment", payload),
+
   saveAttachment: (payload: {
     messageId: string;
     attachmentId: string;

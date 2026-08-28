@@ -239,12 +239,12 @@ export default function EmailMailslotMenu({
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
                         checked
-                          ? "border-ink bg-ink text-on-ink"
+                          ? "border-accent bg-accent text-on-accent"
                           : "border-line-strong bg-surface"
                       }`}
                     >
                       {checked && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-on-ink" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-on-accent" />
                       )}
                     </span>
                     <span
@@ -276,7 +276,7 @@ export default function EmailMailslotMenu({
               type="button"
               disabled={busy || slots.length === 0}
               onClick={() => void confirm()}
-              className="rounded-md bg-ink px-2 py-1 text-sm text-on-ink hover:opacity-90 disabled:opacity-50"
+              className="rounded-md bg-accent px-2 py-1 text-sm text-on-accent hover:opacity-90 disabled:opacity-50"
             >
               Confirm
             </button>

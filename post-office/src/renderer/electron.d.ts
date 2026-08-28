@@ -84,6 +84,10 @@ declare global {
         pattern: string;
         selectedSlotId: string | null;
       }) => Promise<boolean>;
+      getAttachment: (payload: {
+        messageId: string;
+        attachmentId: string;
+      }) => Promise<{ filename: string; mimeType: string; dataBase64: string }>;
       saveAttachment: (payload: {
         messageId: string;
         attachmentId: string;

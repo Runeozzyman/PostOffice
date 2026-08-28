@@ -352,7 +352,7 @@ export default function ComposeWindow() {
   const title = draft.subject.trim() || "New message";
 
   const chrome = (
-    <div className="flex h-11 shrink-0 items-center gap-1 bg-ink px-2 text-on-ink">
+    <div className="flex h-11 shrink-0 items-center gap-1 bg-accent px-2 text-on-accent">
       <button
         type="button"
         className="min-w-0 flex-1 truncate px-2 text-left text-sm font-medium"
@@ -531,7 +531,7 @@ export default function ComposeWindow() {
           type="button"
           disabled={sending}
           onClick={() => void send()}
-          className="rounded-md bg-ink px-4 py-1.5 text-sm font-medium text-on-ink hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-1.5 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
         >
           {sending ? "Sending…" : "Send"}
         </button>

@@ -56,6 +56,7 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 	suggestAddresses: (query) => electron.ipcRenderer.invoke("suggest-addresses", query),
 	getAccountEmail: () => electron.ipcRenderer.invoke("get-account-email"),
 	listSignatures: () => electron.ipcRenderer.invoke("list-signatures"),
+	getAttachment: (payload) => electron.ipcRenderer.invoke("get-attachment", payload),
 	saveAttachment: (payload) => electron.ipcRenderer.invoke("save-attachment", payload)
 });
 //#endregion

@@ -352,8 +352,8 @@ export default function EmailListPanel({
         )}
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-3 text-sm text-ink-secondary">
-        <div className="flex flex-wrap items-center gap-1">
+      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-t border-line px-4 text-sm text-ink-secondary">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={page <= 1}
@@ -380,12 +380,12 @@ export default function EmailListPanel({
           </button>
         </div>
 
-        <span className="text-center">
+        <span className="shrink-0 text-center leading-tight">
           Page {page} of {pageCount}
           <span className="block text-xs text-ink-subtle">{rangeLabel}</span>
         </span>
 
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             disabled={page >= pageCount}

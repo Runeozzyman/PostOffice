@@ -340,6 +340,9 @@ ipcMain.handle("get-account-email", async () => {
 ipcMain.handle("list-signatures", async () => {
 	return callMail("listSignatures");
 });
+ipcMain.handle("get-attachment", async (_event, payload) => {
+	return callMail("loadAttachment", payload);
+});
 ipcMain.handle("save-attachment", async (event, payload) => {
 	const stored = await callMail("loadAttachment", {
 		messageId: payload.messageId,

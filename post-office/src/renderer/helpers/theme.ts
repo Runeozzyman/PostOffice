@@ -13,6 +13,42 @@ export const APP_THEMES = [
     colorScheme: "dark",
     swatch: "#12151a",
   },
+  {
+    id: "mint",
+    label: "Mint",
+    colorScheme: "light",
+    swatch: "#176b51",
+  },
+  {
+    id: "paper",
+    label: "Paper",
+    colorScheme: "light",
+    swatch: "#f0e4bc",
+  },
+  {
+    id: "purple",
+    label: "Purple",
+    colorScheme: "dark",
+    swatch: "#a78bfa",
+  },
+  {
+    id: "pink",
+    label: "Pink",
+    colorScheme: "light",
+    swatch: "#c45c7a",
+  },
+  {
+    id: "sky",
+    label: "Sky",
+    colorScheme: "light",
+    swatch: "#1e56c8",
+  },
+  {
+    id: "brown",
+    label: "Brown",
+    colorScheme: "light",
+    swatch: "#6b4423",
+  },
 ] as const;
 
 export type ThemeId = (typeof APP_THEMES)[number]["id"];

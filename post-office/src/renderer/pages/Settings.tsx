@@ -53,7 +53,7 @@ export default function Settings() {
                       <span
                         className={`h-8 w-8 rounded-full border-2 ${
                           selected
-                            ? "border-ink"
+                            ? "border-accent"
                             : "border-line-strong hover:border-ink-subtle"
                         }`}
                         style={{ backgroundColor: option.swatch }}
@@ -105,7 +105,7 @@ export default function Settings() {
                   value={fontSize}
                   aria-label="Text size"
                   onChange={(event) => setFontSize(Number(event.target.value))}
-                  className="w-36 accent-ink"
+                  className="w-36 accent-accent"
                 />
                 <span className="w-10 text-right text-sm tabular-nums text-ink-secondary">
                   {fontSize}

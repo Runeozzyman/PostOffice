@@ -21,12 +21,11 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
   return (
     <aside
       className={`
-        h-screen shrink-0
+        h-full shrink-0
         border-r border-line
         bg-surface
         flex flex-col
         overflow-hidden
-        transition-all duration-200
         ${collapsed ? "w-16" : "w-64"}
     `}
     >
@@ -36,8 +35,7 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
             className={`
         text-lg font-semibold text-ink
         whitespace-nowrap
-        transition-opacity duration-100
-        ${collapsed ? "opacity-0" : "opacity-100"}
+        ${collapsed ? "sr-only" : ""}
       `}
           >
             PostOffice
@@ -116,7 +114,7 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
         />
       </nav>
 
-      <div className="border-t border-line p-3">
+      <div className="flex h-16 shrink-0 items-center border-t border-line px-3">
         <SidebarItem
           icon={<FiSettings size={18} />}
           label="Settings"
@@ -146,11 +144,9 @@ const SidebarItem = ({
   return (
     <button
       onClick={onClick}
-      className="
+      className={`
         w-full
         flex items-center
-        gap-3
-        px-3 py-2
         rounded-md
         text-sm
         text-ink-secondary
@@ -158,20 +154,15 @@ const SidebarItem = ({
         hover:text-ink
         transition-colors
         hover:cursor-pointer
-      "
+        ${collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2"}
+      `}
     >
       <span className="shrink-0">{icon}</span>
-
-      <span
-        className={`
-          whitespace-nowrap
-          overflow-hidden
-          transition-opacity duration-100
-          ${collapsed ? "w-0 opacity-0" : "w-auto opacity-100"}
-        `}
-      >
-        {label}
-      </span>
+      {collapsed ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="truncate">{label}</span>
+      )}
     </button>
   );
 };

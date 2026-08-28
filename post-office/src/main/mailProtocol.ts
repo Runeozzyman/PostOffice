@@ -140,7 +140,7 @@ export interface MailMethodMap {
   getAccountEmail: { payload: undefined; result: string | null };
   loadAttachment: {
     payload: { messageId: string; attachmentId: string };
-    result: { filename: string; dataBase64: string };
+    result: { filename: string; mimeType: string; dataBase64: string };
   };
   listSignatures: { payload: undefined; result: GmailSignature[] };
   setRefreshToken: { payload: string | null; result: boolean };

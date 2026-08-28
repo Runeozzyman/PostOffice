@@ -4,6 +4,8 @@ import { IoArrowBackSharp } from "react-icons/io5";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
 import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
+import { attachmentPreviewKind } from "../helpers/attachmentPreview";
+import AttachmentPreview from "./AttachmentPreview";
 import {
   buildForwardDraft,
   buildReplyDraft,
@@ -141,41 +143,6 @@ export default function EmailDetail({
         {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
       </div>
 
-      {email.attachments.length > 0 && (
-        <div className="shrink-0 border-b border-line px-4 py-3">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
-            Attachments
-          </p>
-          <ul className="space-y-2">
-            {email.attachments.map((attachment) => (
-              <li
-                key={attachment.id}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="min-w-0 truncate text-ink">
-                  {attachment.filename}
-                  <span className="text-ink-muted">
-                    {" "}
-                    ({formatBytes(attachment.size)})
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  disabled={savingId === attachment.id}
-                  onClick={() =>
-                    saveAttachment(attachment.id, attachment.filename)
-                  }
-                  className="shrink-0 rounded-md border border-line px-2 py-1 text-xs text-ink-secondary hover:bg-hover disabled:opacity-50"
-                >
-                  {savingId === attachment.id ? "Saving…" : "Save"}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
-        </div>
-      )}
-
       <div className="min-h-0 min-w-0 flex-1 overflow-auto p-4">
         {email.bodyHtml ? (
           <iframe
@@ -188,6 +155,51 @@ export default function EmailDetail({
           <pre className="whitespace-pre-wrap break-words font-sans text-sm text-ink">
             {email.bodyText || email.snippet || "No content"}
           </pre>
+        )}
+
+        {email.attachments.length > 0 && (
+          <div className="mt-6 border-t border-line pt-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
+              Attachments
+            </p>
+            <ul className="space-y-4">
+              {email.attachments.map((attachment) => {
+                const previewable = Boolean(
+                  attachmentPreviewKind(attachment.mimeType, attachment.filename)
+                );
+
+                return (
+                  <li key={attachment.id} className="space-y-2">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span className="min-w-0 truncate text-ink">
+                        {attachment.filename}
+                        <span className="text-ink-muted">
+                          {" "}
+                          ({formatBytes(attachment.size)})
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={savingId === attachment.id}
+                        onClick={() =>
+                          saveAttachment(attachment.id, attachment.filename)
+                        }
+                        className="shrink-0 rounded-md border border-line px-2 py-1 text-xs text-ink-secondary hover:bg-hover disabled:opacity-50"
+                      >
+                        {savingId === attachment.id ? "Saving…" : "Save"}
+                      </button>
+                    </div>
+                    {previewable && (
+                      <AttachmentPreview
+                        messageId={email.id}
+                        attachment={attachment}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         )}
       </div>
     </div>

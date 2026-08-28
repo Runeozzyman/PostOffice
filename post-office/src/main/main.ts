@@ -302,6 +302,16 @@ ipcMain.handle("list-signatures", async () => {
 });
 
 ipcMain.handle(
+  "get-attachment",
+  async (
+    _event,
+    payload: { messageId: string; attachmentId: string }
+  ) => {
+    return callMail("loadAttachment", payload);
+  }
+);
+
+ipcMain.handle(
   "save-attachment",
   async (
     event,

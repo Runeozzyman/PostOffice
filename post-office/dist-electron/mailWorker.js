@@ -1666,6 +1666,7 @@ async function handle(method, payload) {
 			}
 			return {
 				filename: stored.filename,
+				mimeType: stored.mimeType,
 				dataBase64: Buffer.from(bytes).toString("base64")
 			};
 		}

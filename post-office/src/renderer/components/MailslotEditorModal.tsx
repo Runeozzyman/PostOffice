@@ -202,7 +202,7 @@ export default function MailslotEditorModal({
               type="button"
               disabled={saving || deleting}
               onClick={() => void submit()}
-              className="rounded-md bg-ink px-3 py-2 text-sm text-on-ink hover:opacity-90 disabled:opacity-50"
+              className="rounded-md bg-accent px-3 py-2 text-sm text-on-accent hover:opacity-90 disabled:opacity-50"
             >
               {saving
                 ? editing
