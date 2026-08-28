@@ -32,6 +32,7 @@ import { sendGmailMessage } from "../services/gmailSend";
 import { setGmailStarred } from "../services/gmailStar";
 import { syncInboxEmails } from "../services/gmailSync";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
+import { listGmailSignatures, clearGmailSignatureCache } from "../services/gmailSignatures";
 import type { ComposeDraft } from "../types/compose";
 import type { MailFromWorker, MailMethod, MailRequest, MailToWorker } from "./mailProtocol";
 
@@ -292,9 +293,12 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
         dataBase64: Buffer.from(bytes).toString("base64"),
       };
     }
+    case "listSignatures":
+      return listGmailSignatures();
     case "setRefreshToken":
       setGmailRefreshToken(typeof payload === "string" ? payload : null);
       clearGmailProfileCache();
+      clearGmailSignatureCache();
       return true;
     default: {
       const exhaustive: never = method;

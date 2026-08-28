@@ -1,3 +1,5 @@
+import { autolinkHtml } from "./signatureHtml";
+
 function isSafeExternalUrl(href: string) {
   try {
     const url = new URL(href, "https://invalid.local");
@@ -8,7 +10,7 @@ function isSafeExternalUrl(href: string) {
 }
 
 export function htmlWithOpenableLinks(html: string) {
-  const document = new DOMParser().parseFromString(html, "text/html");
+  const document = new DOMParser().parseFromString(autolinkHtml(html), "text/html");
 
   for (const anchor of document.querySelectorAll("a[href]")) {
     const href = anchor.getAttribute("href");

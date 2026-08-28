@@ -34,7 +34,11 @@ function deleteRefreshToken() {
 }
 //#endregion
 //#region src/auth/google.ts
-var SCOPES = ["https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.send"];
+var SCOPES = [
+	"https://www.googleapis.com/auth/gmail.modify",
+	"https://www.googleapis.com/auth/gmail.send",
+	"https://www.googleapis.com/auth/gmail.settings.basic"
+];
 var CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
 async function signInWithGoogle() {
 	console.log("Starting Google OAuth...");
@@ -332,6 +336,9 @@ ipcMain.handle("suggest-addresses", async (_event, query) => {
 });
 ipcMain.handle("get-account-email", async () => {
 	return callMail("getAccountEmail");
+});
+ipcMain.handle("list-signatures", async () => {
+	return callMail("listSignatures");
 });
 ipcMain.handle("save-attachment", async (event, payload) => {
 	const stored = await callMail("loadAttachment", {

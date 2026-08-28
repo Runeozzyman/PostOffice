@@ -7,6 +7,8 @@ import { replaceEmails } from "../db/emails";
 import { GMAIL_MAX_ATTACHMENT_BYTES } from "../helpers/gmailLimits";
 import { mimeFromFilename } from "../helpers/mimeFromFilename";
 import { parseGmailMessage } from "./gmailPayload";
+import { splitQuotedBody } from "../helpers/splitQuotedBody";
+import { formatSignatureHtml } from "../helpers/signatureHtml";
 import type { ComposeAttachment } from "../types/compose";
 
 export interface SendEmailInput {
@@ -18,6 +20,8 @@ export interface SendEmailInput {
   threadId?: string;
   inReplyToMessageId?: string;
   attachments?: ComposeAttachment[];
+  signatureText?: string;
+  signatureHtml?: string;
 }
 
 function asError(error: unknown) {
@@ -98,11 +102,64 @@ function loadAttachments(items: ComposeAttachment[]) {
   return loaded;
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function textToHtml(value: string) {
+  return escapeHtml(value).replaceAll("\r\n", "\n").replaceAll("\n", "<br>\r\n");
+}
+
+function withSignatureParts(input: SendEmailInput) {
+  const signatureText = input.signatureText?.trim() ?? "";
+  const signatureHtml = input.signatureHtml?.trim() ?? "";
+  const { before, after } = splitQuotedBody(input.body);
+  const plainParts = [before.trimEnd(), signatureText, after.trimStart()].filter(
+    Boolean
+  );
+  const plain = plainParts.join("\n\n");
+
+  if (!signatureHtml && !signatureText) {
+    return { plain, html: "" };
+  }
+
+  const htmlSignature = signatureHtml
+    ? formatSignatureHtml(signatureHtml)
+    : `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${textToHtml(signatureText)}</div>`;
+  const html = [
+    `<div dir="ltr">${textToHtml(before.trimEnd())}</div><div><br></div>`,
+    htmlSignature,
+    after.trim() ? `<div dir="ltr">${textToHtml(after.trim())}</div>` : "",
+  ]
+    .filter(Boolean)
+    .join("\r\n");
+
+  return { plain, html };
+}
+
+function mimeHeadersAndBody(headers: string[], body: string) {
+  return `${headers.join("\r\n")}\r\n\r\n${body}`;
+}
+
+function mimeMultipart(subtype: "alternative" | "mixed", parts: string[]) {
+  const boundary = `=_po_${subtype}_${randomBytes(12).toString("hex")}`;
+  const inner = parts.map((part) => `--${boundary}\r\n${part}`).join("\r\n");
+  return mimeHeadersAndBody(
+    [`Content-Type: multipart/${subtype}; boundary="${boundary}"`],
+    `${inner}\r\n--${boundary}--`
+  );
+}
+
 function buildRawMessage(
   input: SendEmailInput,
   reply?: { inReplyTo: string; references: string }
 ) {
   const attachments = loadAttachments(input.attachments ?? []);
+  const { plain, html } = withSignatureParts(input);
   const headers = [
     `To: ${input.to.trim()}`,
     input.cc?.trim() ? `Cc: ${input.cc.trim()}` : null,
@@ -113,27 +170,34 @@ function buildRawMessage(
     "MIME-Version: 1.0",
   ].filter((line): line is string => Boolean(line));
 
+  const textPart = mimeHeadersAndBody(
+    ["Content-Type: text/plain; charset=UTF-8"],
+    plain
+  );
+  const bodyEntity = html
+    ? mimeMultipart("alternative", [
+        textPart,
+        mimeHeadersAndBody(["Content-Type: text/html; charset=UTF-8"], html),
+      ])
+    : textPart;
+
   if (attachments.length === 0) {
-    return Buffer.from(
-      `${headers.join("\r\n")}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${input.body}`,
-      "utf8"
-    );
+    return Buffer.from(`${headers.join("\r\n")}\r\n${bodyEntity}\r\n`, "utf8");
   }
 
-  const boundary = `po_${randomBytes(12).toString("hex")}`;
-  const parts = [
-    `${headers.join("\r\n")}\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n`,
-    `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${input.body}\r\n`,
-  ];
+  const attachmentParts = attachments.map((attachment) =>
+    mimeHeadersAndBody(
+      [
+        `Content-Type: ${attachment.mimeType}; name="${attachment.filename.replaceAll('"', "")}"`,
+        `Content-Disposition: attachment; ${filenameParam(attachment.filename)}`,
+        "Content-Transfer-Encoding: base64",
+      ],
+      wrapBase64(attachment.data.toString("base64"))
+    )
+  );
 
-  for (const attachment of attachments) {
-    parts.push(
-      `--${boundary}\r\nContent-Type: ${attachment.mimeType}; name="${attachment.filename.replaceAll('"', "")}"\r\nContent-Disposition: attachment; ${filenameParam(attachment.filename)}\r\nContent-Transfer-Encoding: base64\r\n\r\n${wrapBase64(attachment.data.toString("base64"))}\r\n`
-    );
-  }
-
-  parts.push(`--${boundary}--\r\n`);
-  return Buffer.concat(parts.map((part) => Buffer.from(part, "utf8")));
+  const mixed = mimeMultipart("mixed", [bodyEntity, ...attachmentParts]);
+  return Buffer.from(`${headers.join("\r\n")}\r\n${mixed}\r\n`, "utf8");
 }
 
 export async function sendGmailMessage(input: SendEmailInput) {

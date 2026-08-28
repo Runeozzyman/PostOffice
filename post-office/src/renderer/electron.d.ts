@@ -1,4 +1,4 @@
-import type { ComposeAttachment, ComposeDraft, StoredDraft } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft, GmailSignature, StoredDraft } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -48,6 +48,8 @@ declare global {
         threadId?: string;
         inReplyToMessageId?: string;
         attachments?: ComposeAttachment[];
+        signatureText?: string;
+        signatureHtml?: string;
       }) => Promise<boolean>;
       pickComposeAttachments: () => Promise<ComposeAttachment[]>;
       composeAttachmentsFromPaths: (
@@ -58,6 +60,7 @@ declare global {
         { email: string; name: string }[]
       >;
       getAccountEmail: () => Promise<string | null>;
+      listSignatures: () => Promise<GmailSignature[]>;
       listMailslots: () => Promise<Mailslot[]>;
       createMailslot: (payload: {
         title: string;

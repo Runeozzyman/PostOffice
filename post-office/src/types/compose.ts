@@ -23,6 +23,16 @@ export interface StoredDraft {
   attachments: ComposeAttachment[];
 }
 
+export interface GmailSignature {
+  id: string;
+  email: string;
+  name: string;
+  html: string;
+  text: string;
+  isDefault: boolean;
+  isPrimary: boolean;
+}
+
 export interface AddressSuggestion {
   email: string;
   name: string;

@@ -10,7 +10,8 @@ import { useCompose } from "../context/ComposeContext";
 import { notifyDraftsChanged } from "../helpers/draftEvents";
 import { notifyEmailsChanged } from "../helpers/emailEvents";
 import { GMAIL_MAX_ATTACHMENT_BYTES } from "../../helpers/gmailLimits";
-import type { ComposeAttachment } from "../../types/compose";
+import type { ComposeAttachment, GmailSignature } from "../../types/compose";
+import { splitQuotedBody } from "../../helpers/splitQuotedBody";
 import AddressField from "./AddressField";
 
 const emptyDraft = {
@@ -56,6 +57,8 @@ export default function ComposeWindow() {
   const [sending, setSending] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signatures, setSignatures] = useState<GmailSignature[]>([]);
+  const [signatureId, setSignatureId] = useState("");
   const ignoreSavesRef = useRef(false);
   const latestRef = useRef({
     draft: emptyDraft,
@@ -147,6 +150,8 @@ export default function ComposeWindow() {
       setSending(false);
       setDragging(false);
       setError(null);
+      setSignatures([]);
+      setSignatureId("");
     }
   }, [mode]);
 
@@ -171,6 +176,21 @@ export default function ComposeWindow() {
     setSending(false);
     setDragging(false);
     setError(null);
+
+    void window.electronAPI
+      .listSignatures()
+      .then((result) => {
+        setSignatures(result);
+        const preferred =
+          result.find((item) => item.isDefault) ??
+          result.find((item) => item.isPrimary) ??
+          result[0];
+        setSignatureId(preferred?.id ?? "");
+      })
+      .catch(() => {
+        setSignatures([]);
+        setSignatureId("");
+      });
   }, [sessionId, seed]);
 
   useEffect(() => {
@@ -200,6 +220,23 @@ export default function ComposeWindow() {
   if (mode === "closed") {
     return null;
   }
+
+  const selectedSignature = signatures.find((item) => item.id === signatureId);
+
+  const insertSignatureAtEnd = () => {
+    if (!selectedSignature) {
+      return;
+    }
+
+    const { before, after } = splitQuotedBody(draft.body);
+    setDraft((current) => ({
+      ...current,
+      body: [before.trimEnd(), selectedSignature.text, after.trimStart()]
+        .filter(Boolean)
+        .join("\n\n"),
+    }));
+    setSignatureId("");
+  };
 
   const requestClose = () => {
     void persist({ notify: true })
@@ -291,6 +328,8 @@ export default function ComposeWindow() {
         threadId,
         inReplyToMessageId,
         attachments,
+        signatureText: selectedSignature?.text,
+        signatureHtml: selectedSignature?.html,
       });
       ignoreSavesRef.current = true;
       try {
@@ -413,6 +452,16 @@ export default function ComposeWindow() {
         className="min-h-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm text-ink outline-none"
         placeholder="Write your message…"
       />
+      {selectedSignature && (
+        <div className="shrink-0 border-t border-dashed border-line px-3 py-2">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-ink-subtle">
+            Signature
+          </p>
+          <p className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap text-xs text-ink-muted">
+            {selectedSignature.text}
+          </p>
+        </div>
+      )}
       {attachments.length > 0 && (
         <ul className="flex max-h-28 shrink-0 flex-wrap gap-2 overflow-auto border-t border-line px-3 py-2">
           {attachments.map((attachment) => (
@@ -444,15 +493,40 @@ export default function ComposeWindow() {
         <p className="shrink-0 px-3 pb-2 text-sm text-danger">{error}</p>
       )}
       <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-3 py-2">
-        <button
-          type="button"
-          aria-label="Attach files"
-          onClick={() => void pickFiles()}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-ink-secondary hover:bg-hover hover:text-ink"
-        >
-          <FiPaperclip size={16} />
-          Attach
-        </button>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label="Attach files"
+            onClick={() => void pickFiles()}
+            className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-ink-secondary hover:bg-hover hover:text-ink"
+          >
+            <FiPaperclip size={16} />
+            Attach
+          </button>
+          <label className="inline-flex min-w-0 items-center gap-1.5 text-sm text-ink-secondary">
+            <span className="shrink-0">Signature</span>
+            <select
+              value={signatureId}
+              onChange={(event) => setSignatureId(event.target.value)}
+              className="max-w-40 truncate rounded-md border border-line bg-surface px-2 py-1 text-ink outline-none"
+            >
+              <option value="">None</option>
+              {signatures.map((signature) => (
+                <option key={signature.id} value={signature.id}>
+                  {signature.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            disabled={!selectedSignature}
+            onClick={insertSignatureAtEnd}
+            className="rounded-md px-2 py-1.5 text-sm text-ink-secondary hover:bg-hover hover:text-ink disabled:cursor-not-allowed disabled:text-ink-faint"
+          >
+            Insert
+          </button>
+        </div>
         <button
           type="button"
           disabled={sending}

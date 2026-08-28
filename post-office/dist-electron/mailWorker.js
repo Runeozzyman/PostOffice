@@ -1039,8 +1039,85 @@ function parseGmailMessage(message) {
 	};
 }
 //#endregion
+//#region src/helpers/splitQuotedBody.ts
+function splitQuotedBody(body) {
+	const markers = [/\n\nOn .+ wrote:\n/, /\n\n---------- Forwarded message ----------\n/];
+	let index = -1;
+	for (const marker of markers) {
+		const match = body.search(marker);
+		if (match !== -1 && (index === -1 || match < index)) index = match;
+	}
+	if (index === -1) return {
+		before: body,
+		after: ""
+	};
+	return {
+		before: body.slice(0, index),
+		after: body.slice(index)
+	};
+}
+//#endregion
+//#region src/helpers/htmlToPlain.ts
+function htmlToPlain(html) {
+	return html.replace(/\r\n/g, "\n").replace(/<br\s*\/?>/gi, "\n").replace(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, inner) => {
+		const label = inner.replace(/<[^>]+>/g, "").trim();
+		const url = String(href).trim();
+		if (!label || label === url || url.includes(label) || label.includes(url.replace(/^https?:\/\//, ""))) return url;
+		return `${label} (${url})`;
+	}).replace(/<\/(p|h[1-6]|table|blockquote)>/gi, "\n\n").replace(/<li(\s[^>]*)?>/gi, "\n• ").replace(/<(p|div|h[1-6]|tr|table|blockquote)(\s[^>]*)?>/gi, "\n").replace(/<\/(div|tr|li)>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, "\"").replace(/&#39;/gi, "'").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+function withSignatureDelimiter(text) {
+	const trimmed = text.trim();
+	if (!trimmed) return "";
+	if (/^--\s*$/m.test(trimmed.split(/\r?\n/, 1)[0] ?? "") || trimmed.startsWith("--\n") || trimmed.startsWith("-- \n")) return trimmed;
+	return `--\n${trimmed}`;
+}
+//#endregion
+//#region src/helpers/signatureHtml.ts
+var URL_PATTERN = /\b((?:https?:\/\/|www\.)[^\s<>"']+[^\s<>"'.,;:!?])/gi;
+function unescapeIfNeeded(html) {
+	if (html.includes("<") || !html.includes("&lt;")) return html;
+	return html.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", "\"").replaceAll("&#39;", "'").replaceAll("&amp;", "&");
+}
+function hrefFor(url) {
+	return url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`;
+}
+function linkifyText(text) {
+	return text.replace(URL_PATTERN, (url) => {
+		return `<a href="${hrefFor(url)}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+	});
+}
+function autolinkHtml(html) {
+	return html.replace(/(<a\b[^>]*>[\s\S]*?<\/a>)|([^<]+)|(<[^>]+>)/gi, (full, anchor, text, tag) => {
+		if (anchor) return anchor;
+		if (tag) return tag;
+		return linkifyText(text ?? full);
+	});
+}
+function styleSignatureAnchors(html) {
+	return html.replace(/<a\b([^>]*)>/gi, (_full, attrs) => {
+		let next = attrs;
+		if (!/\bhref\s*=/i.test(next)) return `<a${next}>`;
+		if (!/\btarget=/i.test(next)) next += " target=\"_blank\"";
+		if (!/\brel=/i.test(next)) next += " rel=\"noopener noreferrer\"";
+		if (!/\bstyle=/i.test(next)) next += " style=\"color:inherit;text-decoration:underline\"";
+		return `<a${next}>`;
+	});
+}
+function formatSignatureHtml(html) {
+	let next = unescapeIfNeeded(html.trim());
+	if (!next) return "";
+	next = autolinkHtml(next);
+	if (!htmlToPlain(next).startsWith("--")) next = `<div>--</div>${next}`;
+	if (!/gmail_signature/i.test(next)) next = `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${next}</div>`;
+	return styleSignatureAnchors(next);
+}
+function formatSignatureText(html) {
+	return withSignatureDelimiter(htmlToPlain(html));
+}
+//#endregion
 //#region src/services/gmailSend.ts
-function asError$2(error) {
+function asError$3(error) {
 	if (error instanceof Error) return error;
 	return new Error(String(error));
 }
@@ -1078,8 +1155,46 @@ function loadAttachments(items) {
 	}
 	return loaded;
 }
+function escapeHtml(value) {
+	return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;");
+}
+function textToHtml(value) {
+	return escapeHtml(value).replaceAll("\r\n", "\n").replaceAll("\n", "<br>\r\n");
+}
+function withSignatureParts(input) {
+	const signatureText = input.signatureText?.trim() ?? "";
+	const signatureHtml = input.signatureHtml?.trim() ?? "";
+	const { before, after } = splitQuotedBody(input.body);
+	const plain = [
+		before.trimEnd(),
+		signatureText,
+		after.trimStart()
+	].filter(Boolean).join("\n\n");
+	if (!signatureHtml && !signatureText) return {
+		plain,
+		html: ""
+	};
+	const htmlSignature = signatureHtml ? formatSignatureHtml(signatureHtml) : `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${textToHtml(signatureText)}</div>`;
+	return {
+		plain,
+		html: [
+			`<div dir="ltr">${textToHtml(before.trimEnd())}</div><div><br></div>`,
+			htmlSignature,
+			after.trim() ? `<div dir="ltr">${textToHtml(after.trim())}</div>` : ""
+		].filter(Boolean).join("\r\n")
+	};
+}
+function mimeHeadersAndBody(headers, body) {
+	return `${headers.join("\r\n")}\r\n\r\n${body}`;
+}
+function mimeMultipart(subtype, parts) {
+	const boundary = `=_po_${subtype}_${randomBytes(12).toString("hex")}`;
+	const inner = parts.map((part) => `--${boundary}\r\n${part}`).join("\r\n");
+	return mimeHeadersAndBody([`Content-Type: multipart/${subtype}; boundary="${boundary}"`], `${inner}\r\n--${boundary}--`);
+}
 function buildRawMessage(input, reply) {
 	const attachments = loadAttachments(input.attachments ?? []);
+	const { plain, html } = withSignatureParts(input);
 	const headers = [
 		`To: ${input.to.trim()}`,
 		input.cc?.trim() ? `Cc: ${input.cc.trim()}` : null,
@@ -1089,12 +1204,15 @@ function buildRawMessage(input, reply) {
 		reply?.references ? `References: ${reply.references}` : null,
 		"MIME-Version: 1.0"
 	].filter((line) => Boolean(line));
-	if (attachments.length === 0) return Buffer.from(`${headers.join("\r\n")}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${input.body}`, "utf8");
-	const boundary = `po_${randomBytes(12).toString("hex")}`;
-	const parts = [`${headers.join("\r\n")}\r\nContent-Type: multipart/mixed; boundary="${boundary}"\r\n`, `--${boundary}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${input.body}\r\n`];
-	for (const attachment of attachments) parts.push(`--${boundary}\r\nContent-Type: ${attachment.mimeType}; name="${attachment.filename.replaceAll("\"", "")}"\r\nContent-Disposition: attachment; ${filenameParam(attachment.filename)}\r\nContent-Transfer-Encoding: base64\r\n\r\n${wrapBase64(attachment.data.toString("base64"))}\r\n`);
-	parts.push(`--${boundary}--\r\n`);
-	return Buffer.concat(parts.map((part) => Buffer.from(part, "utf8")));
+	const textPart = mimeHeadersAndBody(["Content-Type: text/plain; charset=UTF-8"], plain);
+	const bodyEntity = html ? mimeMultipart("alternative", [textPart, mimeHeadersAndBody(["Content-Type: text/html; charset=UTF-8"], html)]) : textPart;
+	if (attachments.length === 0) return Buffer.from(`${headers.join("\r\n")}\r\n${bodyEntity}\r\n`, "utf8");
+	const mixed = mimeMultipart("mixed", [bodyEntity, ...attachments.map((attachment) => mimeHeadersAndBody([
+		`Content-Type: ${attachment.mimeType}; name="${attachment.filename.replaceAll("\"", "")}"`,
+		`Content-Disposition: attachment; ${filenameParam(attachment.filename)}`,
+		"Content-Transfer-Encoding: base64"
+	], wrapBase64(attachment.data.toString("base64"))))]);
+	return Buffer.from(`${headers.join("\r\n")}\r\n${mixed}\r\n`, "utf8");
 }
 async function sendGmailMessage(input) {
 	if (!input.to.trim()) throw new Error("Add at least one recipient.");
@@ -1137,14 +1255,14 @@ async function sendGmailMessage(input) {
 			format: "full"
 		})).data)]);
 	} catch (error) {
-		const message = asError$2(error).message;
+		const message = asError$3(error).message;
 		if (message.includes("insufficient") || message.includes("403")) throw new Error("Google blocked sending mail. Sign out, sign in, and accept the prompt to send email.");
-		throw asError$2(error);
+		throw asError$3(error);
 	}
 }
 //#endregion
 //#region src/services/gmailStar.ts
-function asError$1(error) {
+function asError$2(error) {
 	if (error instanceof Error) return error;
 	return new Error(String(error));
 }
@@ -1161,9 +1279,9 @@ async function setGmailStarred(id, starred) {
 			requestBody: starred ? { addLabelIds: ["STARRED"] } : { removeLabelIds: ["STARRED"] }
 		});
 	} catch (error) {
-		const message = asError$1(error).message;
+		const message = asError$2(error).message;
 		if (message.includes("insufficient") || message.includes("insufficientPermissions") || message.includes("403")) throw new Error("Google blocked starring this message. Sign out, sign in, and accept the prompt to view and edit mail.");
-		throw asError$1(error);
+		throw asError$2(error);
 	}
 }
 //#endregion
@@ -1309,14 +1427,14 @@ async function syncInboxEmails(onStored, onProgress) {
 }
 //#endregion
 //#region src/services/gmailTrash.ts
-function asError(error) {
+function asError$1(error) {
 	if (error instanceof Error) return error;
 	return new Error(String(error));
 }
 function rethrowTrashError(error) {
-	const message = asError(error).message;
+	const message = asError$1(error).message;
 	if (message.includes("insufficient") || message.includes("insufficientPermissions") || message.includes("403")) throw new Error("Google blocked moving this message. Sign out, sign in, and accept the prompt to view and edit mail. If that prompt does not appear, open myaccount.google.com/permissions, remove PostOffice, then sign in again.");
-	throw asError(error);
+	throw asError$1(error);
 }
 async function gmailClient() {
 	const auth = await getAuthenticatedClient();
@@ -1348,6 +1466,52 @@ async function untrashGmailMessage(id) {
 		});
 	} catch (error) {
 		rethrowTrashError(error);
+	}
+}
+//#endregion
+//#region src/services/gmailSignatures.ts
+var cache = null;
+function clearGmailSignatureCache() {
+	cache = null;
+}
+function asError(error) {
+	return error instanceof Error ? error : new Error(String(error));
+}
+async function listGmailSignatures() {
+	if (cache) return cache;
+	const auth = await getAuthenticatedClient();
+	if (!auth) throw new Error("User is not authenticated.");
+	try {
+		const signatures = ((await import_src.google.gmail({
+			version: "v1",
+			auth
+		}).users.settings.sendAs.list({ userId: "me" })).data.sendAs ?? []).map((alias) => {
+			const htmlRaw = alias.signature?.trim() ?? "";
+			const html = htmlRaw ? formatSignatureHtml(htmlRaw) : "";
+			const text = htmlRaw ? formatSignatureText(htmlRaw) : "";
+			if (!html && !text) return null;
+			const email = alias.sendAsEmail ?? "";
+			return {
+				id: email || alias.displayName || "signature",
+				email,
+				name: alias.displayName?.trim() || email,
+				html,
+				text,
+				isDefault: Boolean(alias.isDefault),
+				isPrimary: Boolean(alias.isPrimary)
+			};
+		}).filter((item) => Boolean(item));
+		signatures.sort((left, right) => {
+			if (left.isDefault !== right.isDefault) return left.isDefault ? -1 : 1;
+			if (left.isPrimary !== right.isPrimary) return left.isPrimary ? -1 : 1;
+			return left.name.localeCompare(right.name);
+		});
+		cache = signatures;
+		return signatures;
+	} catch (error) {
+		const message = asError(error).message;
+		if (message.includes("insufficient") || message.includes("insufficientPermissions") || message.includes("403")) throw new Error("Google blocked reading signatures. Sign out, sign in, and accept access to Gmail settings.");
+		throw asError(error);
 	}
 }
 //#endregion
@@ -1505,9 +1669,11 @@ async function handle(method, payload) {
 				dataBase64: Buffer.from(bytes).toString("base64")
 			};
 		}
+		case "listSignatures": return listGmailSignatures();
 		case "setRefreshToken":
 			setGmailRefreshToken(typeof payload === "string" ? payload : null);
 			clearGmailProfileCache();
+			clearGmailSignatureCache();
 			return true;
 		default: throw new Error(`Unknown mail method: ${method}`);
 	}

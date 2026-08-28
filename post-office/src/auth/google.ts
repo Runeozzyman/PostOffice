@@ -8,6 +8,7 @@ import { saveRefreshToken, deleteRefreshToken } from "./tokenStorage";
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.settings.basic",
 ];
 
 export const CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");

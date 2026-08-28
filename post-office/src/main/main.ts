@@ -297,6 +297,10 @@ ipcMain.handle("get-account-email", async () => {
   return callMail("getAccountEmail");
 });
 
+ipcMain.handle("list-signatures", async () => {
+  return callMail("listSignatures");
+});
+
 ipcMain.handle(
   "save-attachment",
   async (

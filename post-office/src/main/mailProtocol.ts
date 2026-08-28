@@ -1,4 +1,4 @@
-import type { ComposeAttachment, ComposeDraft, StoredDraft } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft, GmailSignature, StoredDraft } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -30,6 +30,7 @@ export type MailMethod =
   | "suggestAddresses"
   | "getAccountEmail"
   | "loadAttachment"
+  | "listSignatures"
   | "setRefreshToken";
 
 export interface MailRequest {
@@ -123,6 +124,8 @@ export interface MailMethodMap {
       threadId?: string;
       inReplyToMessageId?: string;
       attachments?: ComposeAttachment[];
+      signatureText?: string;
+      signatureHtml?: string;
     };
     result: boolean;
   };
@@ -139,5 +142,6 @@ export interface MailMethodMap {
     payload: { messageId: string; attachmentId: string };
     result: { filename: string; dataBase64: string };
   };
+  listSignatures: { payload: undefined; result: GmailSignature[] };
   setRefreshToken: { payload: string | null; result: boolean };
 }

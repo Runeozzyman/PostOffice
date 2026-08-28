@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
-import type { ComposeAttachment, ComposeDraft, StoredDraft } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft, GmailSignature, StoredDraft } from "../types/compose";
 import type { Email, EmailDetail, EmailPage } from "../types/email";
 import type { Mailslot, MailslotFiling, MailslotIcon } from "../types/mailslot";
 
@@ -146,6 +146,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     threadId?: string;
     inReplyToMessageId?: string;
     attachments?: ComposeAttachment[];
+    signatureText?: string;
+    signatureHtml?: string;
   }): Promise<boolean> => ipcRenderer.invoke("send-email", payload),
 
   pickComposeAttachments: (): Promise<ComposeAttachment[]> =>
@@ -161,6 +163,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   getAccountEmail: (): Promise<string | null> =>
     ipcRenderer.invoke("get-account-email"),
+
+  listSignatures: (): Promise<GmailSignature[]> =>
+    ipcRenderer.invoke("list-signatures"),
 
   saveAttachment: (payload: {
     messageId: string;
