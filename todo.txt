@@ -2,6 +2,7 @@
 (B) 2026-08-26 Add image rendering in email
 (C) 2026-08-26 Create selectable themes
 ------------------------------------------------------------------------------------------------------
+x (A) 2026-08-26 2026-08-26 Separate UI and backend logic into seperate threads 
 x (A) 2026-08-26 2026-08-26 Add drafts folder for unfinished emails
 x (B) 2026-08-26 2026-08-26 Allow for changing of font and font size
 x (B) 2026-08-26 2026-08-25 Add support for sending attachments
