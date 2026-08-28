@@ -26,6 +26,10 @@ dist-ssr
 
 node_modules/
 dist/
+dist-electron/
 credentials.json
 .env
 tokens.json
+.env
+*.env
+env/

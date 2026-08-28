@@ -1,0 +1,8 @@
+.env
+.env.*
+!.env.example
+tokens.json
+credentials.json
+dist/
+dist-electron/
+**/dist-electron/
