@@ -10,7 +10,10 @@ export default defineConfig({
 
     electron({
       main: {
-        entry: "src/main/main.ts",
+        entry: {
+          main: "src/main/main.ts",
+          mailWorker: "src/main/mailWorker.ts",
+        },
       },
 
       preload: {

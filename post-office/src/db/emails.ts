@@ -80,9 +80,16 @@ function toEmail(row: EmailListRecord): Email {
   };
 }
 
-export function listEmailIds(): Set<string> {
+export function existingEmailIds(ids: string[]): Set<string> {
+  if (ids.length === 0) {
+    return new Set();
+  }
+
+  const placeholders = ids.map(() => "?").join(",");
   const rows = asRows<{ id: string }>(
-    getDb().prepare(`SELECT id FROM emails`).all()
+    getDb()
+      .prepare(`SELECT id FROM emails WHERE id IN (${placeholders})`)
+      .all(...ids)
   );
 
   return new Set(rows.map((row) => row.id));

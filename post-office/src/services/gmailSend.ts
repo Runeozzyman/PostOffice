@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { google } from "googleapis";
-import { getAuthenticatedClient } from "../auth/google";
+import { getAuthenticatedClient } from "../auth/gmailSession";
 import { replaceEmails } from "../db/emails";
 import { GMAIL_MAX_ATTACHMENT_BYTES } from "../helpers/gmailLimits";
 import { mimeFromFilename } from "../helpers/mimeFromFilename";

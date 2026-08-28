@@ -1,8 +1,8 @@
 import { google } from "googleapis";
 import type { OAuth2Client } from "google-auth-library";
-import { getAuthenticatedClient } from "../auth/google";
+import { getAuthenticatedClient } from "../auth/gmailSession";
 import {
-  listEmailIds,
+  existingEmailIds,
   replaceEmails,
   type UpsertEmailInput,
 } from "../db/emails";
@@ -118,7 +118,7 @@ async function storeMessages(
 export async function syncInboxEmails(
   onStored?: (email: Email) => void,
   onProgress?: (progress: SyncProgress) => void
-): Promise<void> {
+): Promise<number> {
   const auth = await getAuthenticatedClient();
 
   if (!auth) {
@@ -130,12 +130,11 @@ export async function syncInboxEmails(
     auth,
   });
 
-  const knownIds = listEmailIds();
   const storedThisRun = { count: 0 };
   let pageToken: string | undefined;
   let listed = 0;
 
-  console.log("Starting full mailbox sync of messages not in the database.");
+  console.log("Starting mailbox sync from newest messages.");
 
   do {
     const response = await gmail.users.messages.list({
@@ -150,7 +149,8 @@ export async function syncInboxEmails(
 
     listed += pageIds.length;
 
-    const missingIds = pageIds.filter((id) => !knownIds.has(id));
+    const alreadyStored = existingEmailIds(pageIds);
+    const missingIds = pageIds.filter((id) => !alreadyStored.has(id));
 
     if (missingIds.length > 0) {
       await storeMessages(
@@ -160,17 +160,20 @@ export async function syncInboxEmails(
         onProgress,
         storedThisRun
       );
-
-      for (const id of missingIds) {
-        knownIds.add(id);
-      }
     }
 
     pageToken = response.data.nextPageToken ?? undefined;
     console.log(
       `Listed ${listed} message ids, stored ${storedThisRun.count} new messages.`
     );
+
+    // Gmail lists newest-first. A page with nothing new means we have
+    // caught up to mail already in the database; older pages can be skipped.
+    if (pageIds.length === 0 || missingIds.length === 0) {
+      break;
+    }
   } while (pageToken);
 
-  console.log(`Full sync finished. Stored ${storedThisRun.count} new messages.`);
+  console.log(`Mailbox sync finished. Stored ${storedThisRun.count} new messages.`);
+  return storedThisRun.count;
 }

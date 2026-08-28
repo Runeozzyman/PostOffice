@@ -1,6 +1,6 @@
-import { app } from "electron";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { getUserDataPath } from "./paths";
 
 function asRows<T>(rows: unknown): T[] {
   return rows as T[];
@@ -220,7 +220,7 @@ function collapseExclusiveMailslots(database: DatabaseSync) {
 }
 
 export function initDatabase(): DatabaseSync {
-  const dbPath = path.join(app.getPath("userData"), "postoffice.db");
+  const dbPath = path.join(getUserDataPath(), "postoffice.db");
   db = new DatabaseSync(dbPath);
 
   db.exec("PRAGMA journal_mode = WAL");

@@ -3,18 +3,14 @@ import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
 import { shell } from "electron";
-import { loadRefreshToken, saveRefreshToken, deleteRefreshToken } from "./tokenStorage";
-
+import { saveRefreshToken, deleteRefreshToken } from "./tokenStorage";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/gmail.send",
 ];
 
-const CREDENTIALS_PATH = path.join(
-  process.cwd(),
-  "credentials.json"
-);
+export const CREDENTIALS_PATH = path.join(process.cwd(), "credentials.json");
 
 export async function signInWithGoogle() {
   console.log("Starting Google OAuth...");
@@ -124,50 +120,12 @@ export async function signInWithGoogle() {
 
   saveRefreshToken(tokens.refresh_token);
 
-  oauth2Client.setCredentials(tokens)
+  oauth2Client.setCredentials(tokens);
 
   return tokens;
 }
 
-let cachedClient: InstanceType<typeof google.auth.OAuth2> | null = null;
-let cachedRefreshToken: string | null = null;
-
-export async function signOutWithGoogle(){
+export async function signOutWithGoogle() {
   deleteRefreshToken();
-  cachedClient = null;
-  cachedRefreshToken = null;
-  console.log("Signed out with Google")
-}
-
-export async function getAuthenticatedClient() {
-  const refreshToken = loadRefreshToken();
-
-  if (!refreshToken) {
-    cachedClient = null;
-    cachedRefreshToken = null;
-    return null;
-  }
-
-  if (cachedClient && cachedRefreshToken === refreshToken) {
-    return cachedClient;
-  }
-
-  const credentials = JSON.parse(
-    fs.readFileSync(CREDENTIALS_PATH, "utf-8")
-  );
-
-  const { client_id, client_secret } = credentials.installed;
-
-  const oauth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret
-  );
-
-  oauth2Client.setCredentials({
-    refresh_token: refreshToken,
-  });
-
-  cachedClient = oauth2Client;
-  cachedRefreshToken = refreshToken;
-  return oauth2Client;
+  console.log("Signed out with Google");
 }

@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { getAuthenticatedClient } from "../auth/google";
+import { getAuthenticatedClient } from "../auth/gmailSession";
 
 let cachedAddress: string | null | undefined;
 

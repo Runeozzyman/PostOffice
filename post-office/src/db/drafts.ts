@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { app } from "electron";
+import { getUserDataPath } from "./paths";
 import type { ComposeAttachment, StoredDraft } from "../types/compose";
 import { getDb } from "./database";
 
@@ -34,7 +34,7 @@ interface AttachmentRecord {
 }
 
 function draftsRoot() {
-  return path.join(app.getPath("userData"), "draft-files");
+  return path.join(getUserDataPath(), "draft-files");
 }
 
 function draftFolder(id: string) {

@@ -8,41 +8,16 @@ import {
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { google } from "googleapis";
 
 import {
-  getAuthenticatedClient,
+  CREDENTIALS_PATH,
   signInWithGoogle,
   signOutWithGoogle,
 } from "../auth/google";
-import { sendGmailMessage } from "../services/gmailSend";
+import { loadRefreshToken } from "../auth/tokenStorage";
 import { mimeFromFilename } from "../helpers/mimeFromFilename";
-import type { ComposeAttachment } from "../types/compose";
-import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
-import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
-import { setGmailStarred } from "../services/gmailStar";
-import {
-  enqueueGmailLabelSync,
-  nextLabelGeneration,
-} from "../services/gmailBackground";
-import { withRestored, withStarred, withTrashed } from "../helpers/emailLabels";
-import { syncInboxEmails } from "../services/gmailSync";
-import { initDatabase } from "../db/database";
-import { getEmail, getEmailLabels, getStoredAttachment, listInboxPage, applyEmailMailslotMembership, backfillSenderFields, getMailslotFiling, rebuildAddressContactsCache, searchAddressSuggestions, setEmailLabels } from "../db/emails";
-import {
-  applyMailslotRules,
-  createMailslot,
-  deleteMailslot,
-  listMailslots,
-  updateMailslot,
-} from "../db/mailslots";
-import {
-  deleteDraft,
-  getDraft,
-  listDrafts,
-  saveDraft,
-} from "../db/drafts";
-import type { ComposeDraft } from "../types/compose";
+import type { ComposeAttachment, ComposeDraft } from "../types/compose";
+import { callMail, onMailEvent, startMailRuntime, stopMailRuntime } from "./mailRuntime";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -126,42 +101,52 @@ const createWindow = () => {
   window.loadURL("http://localhost:5173");
 };
 
+function broadcast(channel: string, payload: unknown) {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(channel, payload);
+  }
+}
+
+onMailEvent((message) => {
+  if (message.kind !== "event") {
+    return;
+  }
+
+  if (message.event === "email-stored") {
+    broadcast("email-stored", message.payload);
+    return;
+  }
+
+  if (message.event === "sync-progress") {
+    broadcast("sync-progress", message.payload);
+    return;
+  }
+
+  broadcast("email-action-failed", message.payload);
+});
+
 ipcMain.handle(
   "list-emails",
   async (
     _event,
-    options: { page: number; pageSize: number; query?: string; mailslotId?: string; mailbox?: "inbox" | "starred" | "sent" | "trash" }
+    options: {
+      page: number;
+      pageSize: number;
+      query?: string;
+      mailslotId?: string;
+      mailbox?: "inbox" | "starred" | "sent" | "trash";
+    }
   ) => {
-    return listInboxPage(options);
+    return callMail("listEmails", options);
   }
 );
 
-let mailboxSyncInFlight = false;
-
-ipcMain.handle("sync-emails", async (event) => {
-  if (mailboxSyncInFlight) {
-    return;
-  }
-
-  mailboxSyncInFlight = true;
-
-  try {
-    return await syncInboxEmails(
-      (email) => {
-        event.sender.send("email-stored", email);
-      },
-      (progress) => {
-        event.sender.send("sync-progress", progress);
-      }
-    );
-  } finally {
-    rebuildAddressContactsCache();
-    mailboxSyncInFlight = false;
-  }
+ipcMain.handle("sync-emails", async () => {
+  return callMail("syncEmails");
 });
 
 ipcMain.handle("list-mailslots", async () => {
-  return listMailslots();
+  return callMail("listMailslots");
 });
 
 ipcMain.handle(
@@ -170,11 +155,7 @@ ipcMain.handle(
     _event,
     payload: { title: string; color: string; icon: string }
   ) => {
-    return createMailslot({
-      title: payload.title,
-      color: payload.color,
-      icon: payload.icon as Parameters<typeof createMailslot>[0]["icon"],
-    });
+    return callMail("createMailslot", payload);
   }
 );
 
@@ -184,26 +165,17 @@ ipcMain.handle(
     _event,
     payload: { id: string; title: string; color: string; icon: string }
   ) => {
-    return updateMailslot({
-      id: payload.id,
-      title: payload.title,
-      color: payload.color,
-      icon: payload.icon as Parameters<typeof updateMailslot>[0]["icon"],
-    });
+    return callMail("updateMailslot", payload);
   }
 );
 
 ipcMain.handle("delete-mailslot", async (_event, id: string) => {
-  deleteMailslot(id);
-  return true;
+  return callMail("deleteMailslot", id);
 });
 
-ipcMain.handle(
-  "get-mailslot-filing",
-  async (_event, emailId: string) => {
-    return getMailslotFiling(emailId);
-  }
-);
+ipcMain.handle("get-mailslot-filing", async (_event, emailId: string) => {
+  return callMail("getMailslotFiling", emailId);
+});
 
 ipcMain.handle(
   "apply-email-mailslots",
@@ -211,8 +183,7 @@ ipcMain.handle(
     _event,
     payload: { emailId: string; selectedSlotId: string | null }
   ) => {
-    applyEmailMailslotMembership(payload.emailId, payload.selectedSlotId);
-    return true;
+    return callMail("applyEmailMailslots", payload);
   }
 );
 
@@ -226,74 +197,26 @@ ipcMain.handle(
       selectedSlotId: string | null;
     }
   ) => {
-    applyMailslotRules(payload);
-    return true;
+    return callMail("applyMailslotRules", payload);
   }
 );
 
-function broadcast(channel: string, payload: unknown) {
-  for (const window of BrowserWindow.getAllWindows()) {
-    window.webContents.send(channel, payload);
-  }
-}
-
-function scheduleLabelSync(
-  id: string,
-  previousLabels: string[],
-  work: () => Promise<void>
-) {
-  const gen = nextLabelGeneration(id);
-  enqueueGmailLabelSync(id, gen, previousLabels, work, (error) => {
-    const email = getEmail(id);
-    broadcast("email-action-failed", {
-      email,
-      message: error.message,
-    });
-  });
-}
-
 ipcMain.handle("get-email", async (_event, id: string) => {
-  return getEmail(id);
+  return callMail("getEmail", id);
 });
 
 ipcMain.handle("trash-email", async (_event, id: string) => {
-  const previous = getEmailLabels(id);
-
-  if (!previous) {
-    throw new Error("Email was not found in the local database.");
-  }
-
-  setEmailLabels(id, withTrashed(previous));
-  scheduleLabelSync(id, previous, () => trashGmailMessage(id));
-  return true;
+  return callMail("trashEmail", id);
 });
 
 ipcMain.handle("untrash-email", async (_event, id: string) => {
-  const previous = getEmailLabels(id);
-
-  if (!previous) {
-    throw new Error("Email was not found in the local database.");
-  }
-
-  setEmailLabels(id, withRestored(previous));
-  scheduleLabelSync(id, previous, () => untrashGmailMessage(id));
-  return true;
+  return callMail("untrashEmail", id);
 });
 
 ipcMain.handle(
   "set-email-starred",
   async (_event, payload: { id: string; starred: boolean }) => {
-    const previous = getEmailLabels(payload.id);
-
-    if (!previous) {
-      throw new Error("Email was not found in the local database.");
-    }
-
-    setEmailLabels(payload.id, withStarred(previous, payload.starred));
-    scheduleLabelSync(payload.id, previous, () =>
-      setGmailStarred(payload.id, payload.starred)
-    );
-    return true;
+    return callMail("setEmailStarred", payload);
   }
 );
 
@@ -312,9 +235,7 @@ ipcMain.handle(
       attachments?: ComposeAttachment[];
     }
   ) => {
-    await sendGmailMessage(payload);
-    rebuildAddressContactsCache();
-    return true;
+    return callMail("sendEmail", payload);
   }
 );
 
@@ -353,40 +274,27 @@ ipcMain.handle(
 );
 
 ipcMain.handle("list-drafts", async () => {
-  return listDrafts();
+  return callMail("listDrafts");
 });
 
 ipcMain.handle("get-draft", async (_event, id: string) => {
-  return typeof id === "string" ? getDraft(id) : null;
+  return callMail("getDraft", id);
 });
 
 ipcMain.handle("save-draft", async (_event, payload: ComposeDraft) => {
-  return saveDraft({
-    id: payload?.id,
-    to: payload?.to ?? "",
-    cc: payload?.cc,
-    bcc: payload?.bcc,
-    subject: payload?.subject ?? "",
-    body: payload?.body ?? "",
-    threadId: payload?.threadId,
-    inReplyToMessageId: payload?.inReplyToMessageId,
-    attachments: payload?.attachments,
-  });
+  return callMail("saveDraft", payload);
 });
 
 ipcMain.handle("delete-draft", async (_event, id: string) => {
-  if (typeof id === "string" && id) {
-    deleteDraft(id);
-  }
-  return true;
+  return callMail("deleteDraft", id);
 });
 
 ipcMain.handle("suggest-addresses", async (_event, query: string) => {
-  return searchAddressSuggestions(typeof query === "string" ? query : "");
+  return callMail("suggestAddresses", typeof query === "string" ? query : "");
 });
 
 ipcMain.handle("get-account-email", async () => {
-  return getGmailAddress();
+  return callMail("getAccountEmail");
 });
 
 ipcMain.handle(
@@ -395,41 +303,10 @@ ipcMain.handle(
     event,
     payload: { messageId: string; attachmentId: string; filename: string }
   ) => {
-    const stored = getStoredAttachment(payload.messageId, payload.attachmentId);
-
-    if (!stored) {
-      throw new Error("Attachment was not found.");
-    }
-
-    let bytes = stored.data;
-
-    if (!bytes) {
-      const auth = await getAuthenticatedClient();
-
-      if (!auth) {
-        throw new Error("User is not authenticated.");
-      }
-
-      const gmail = google.gmail({
-        version: "v1",
-        auth,
-      });
-
-      const response = await gmail.users.messages.attachments.get({
-        userId: "me",
-        messageId: payload.messageId,
-        id: payload.attachmentId,
-      });
-
-      if (!response.data.data) {
-        throw new Error("Gmail did not return attachment data.");
-      }
-
-      bytes = Buffer.from(
-        response.data.data.replace(/-/g, "+").replace(/_/g, "/"),
-        "base64"
-      );
-    }
+    const stored = await callMail("loadAttachment", {
+      messageId: payload.messageId,
+      attachmentId: payload.attachmentId,
+    });
 
     const browserWindow = BrowserWindow.fromWebContents(event.sender);
     const result = browserWindow
@@ -444,30 +321,36 @@ ipcMain.handle(
       return { canceled: true };
     }
 
-    fs.writeFileSync(result.filePath, bytes);
+    fs.writeFileSync(result.filePath, Buffer.from(stored.dataBase64, "base64"));
     return { canceled: false };
   }
 );
 
 ipcMain.handle("google-sign-out", async () => {
   signOutWithGoogle();
-  clearGmailProfileCache();
+  await callMail("setRefreshToken", null);
   return true;
 });
 
 ipcMain.handle("check-auth", async () => {
-  const auth = await getAuthenticatedClient();
-
-  return auth !== null;
+  return loadRefreshToken() !== null;
 });
 
 ipcMain.handle("google-sign-in", async () => {
-  return await signInWithGoogle();
+  await signInWithGoogle();
+  await callMail("setRefreshToken", loadRefreshToken());
+  return true;
 });
 
-app.whenReady().then(() => {
-  initDatabase();
-  backfillSenderFields();
-  rebuildAddressContactsCache();
+app.whenReady().then(async () => {
+  await startMailRuntime({
+    userDataPath: app.getPath("userData"),
+    credentialsPath: CREDENTIALS_PATH,
+    refreshToken: loadRefreshToken(),
+  });
   createWindow();
+});
+
+app.on("before-quit", () => {
+  stopMailRuntime();
 });
