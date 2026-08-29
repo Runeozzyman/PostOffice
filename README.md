@@ -3,7 +3,12 @@ PostOffice is a desktop mail client made with electron that allows users to filt
 leveraging an AI-assisted workflow via Cursor.
 
 ## Screenshots
--insert ss'-
+![Login](docs/p1.jpg)
+![Mailslots](docs/p2.png)
+![Create New Mailslot](docs/p3.png)
+![Inbox](docs/p4_BLURTHIS.png)
+![Settings](docs/p5.png)
+
 
 ## Tech Used
 -insert logos-
