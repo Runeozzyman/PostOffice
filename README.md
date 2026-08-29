@@ -1,31 +1,29 @@
 # What is PostOffice
-PostOffice is a desktop mail client made with electron that allows users to filter their emails into intuitively organized custom mailboxes, called 'mailslots'. POstOffice was developed
-leveraging an AI-assisted workflow via Cursor.
+
+PostOffice is a desktop mail client made with Electron that lets users filter email into custom mailboxes called **mailslots**. It was developed with an AI-assisted workflow in Cursor.
 
 ## Screenshots
-![Login](docs/p1.png)
 
-The login process uses Google's OAuth 2.0 flow to ensure secure access to user accounts.
+<img src="docs/p1.png" alt="Login" width="480" />
 
-![Mailslots](docs/p2.png)
+*Sign-in uses Google OAuth 2.0.*
 
-Users can create a multitude of custom mailslots to filter their mail into, additionally differentiated by colour.
+<img src="docs/p2.png" alt="Mailslots" width="480" />
 
-![Create New Mailslot](docs/p3.png)
+*Mailslots are custom mailboxes, each with its own color.*
 
-Mailslots can be any RGB colour and use a selected icon.
+<img src="docs/p3.png" alt="Create a mailslot" width="480" />
 
-![Inbox](docs/p4_BLURTHIS.png)
+*Pick any RGB color and an icon when you create one.*
 
-Emails are fetched from associated Gmail account, sorted in order of arrival, and colour coded by which mailslot they are associated with.
-Users can also 'open' any of their mailslots to see all mail filtered into it.
+<img src="docs/p4_BLURTHIS.png" alt="Inbox" width="480" />
 
-![Settings](docs/p5.png)
+*Inbox mail is fetched from Gmail, ordered by arrival, and color-coded by mailslot. Open a mailslot to see only that mail.*
 
-Various settings and preferences.
+<img src="docs/p5.png" alt="Settings" width="480" />
 
+*Themes, typography, and other preferences.*
 
 ## Tech Used
+
 -insert logos-
-
-
