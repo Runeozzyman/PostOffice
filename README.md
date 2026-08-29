@@ -39,4 +39,6 @@ PostOffice is a desktop mail client made with Electron that lets users filter em
 
 ## Tech Used
 
--insert logos-
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=ts,react,electron,sqlite,nodejs,tailwind,gmail" alt="TypeScript, React, Electron, SQLite, Node.js, Tailwind CSS, and Gmail" />
+</p>
