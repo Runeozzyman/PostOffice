@@ -4,25 +4,38 @@ PostOffice is a desktop mail client made with Electron that lets users filter em
 
 ## Screenshots
 
-<img src="docs/p1.png" alt="Login" width="480" />
+<p align="center">
+  <img src="docs/p1.png" alt="Login" width="480" />
+</p>
+<p align="center"><em>Sign-in uses Google OAuth 2.0.</em></p>
 
-*Sign-in uses Google OAuth 2.0.*
+---
 
-<img src="docs/p2.png" alt="Mailslots" width="480" />
+<p align="center">
+  <img src="docs/p2.png" alt="Mailslots" width="480" />
+</p>
+<p align="center"><em>Mailslots are custom mailboxes, each with its own color.</em></p>
 
-*Mailslots are custom mailboxes, each with its own color.*
+---
 
-<img src="docs/p3.png" alt="Create a mailslot" width="480" />
+<p align="center">
+  <img src="docs/p3.png" alt="Create a mailslot" width="480" />
+</p>
+<p align="center"><em>Pick any RGB color and an icon when you create one.</em></p>
 
-*Pick any RGB color and an icon when you create one.*
+---
 
-<img src="docs/p4_BLURTHIS.png" alt="Inbox" width="480" />
+<p align="center">
+  <img src="docs/p4_BLURTHIS.png" alt="Inbox" width="480" />
+</p>
+<p align="center"><em>Inbox mail is fetched from Gmail, ordered by arrival, and color-coded by mailslot. Open a mailslot to see only that mail.</em></p>
 
-*Inbox mail is fetched from Gmail, ordered by arrival, and color-coded by mailslot. Open a mailslot to see only that mail.*
+---
 
-<img src="docs/p5.png" alt="Settings" width="480" />
-
-*Themes, typography, and other preferences.*
+<p align="center">
+  <img src="docs/p5.png" alt="Settings" width="480" />
+</p>
+<p align="center"><em>Themes, typography, and other preferences.</em></p>
 
 ## Tech Used
 
