@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ColorPicker from "../components/ColorPicker";
 import SettingsGroup from "../components/SettingsGroup";
 import SettingsToggle from "../components/SettingsToggle";
 import SignOutButton from "../components/SignOutButton";
@@ -22,6 +23,8 @@ export default function Settings() {
   const {
     theme,
     setTheme,
+    themeColor,
+    setThemeColor,
     animationsEnabled,
     setAnimationsEnabled,
     font,
@@ -70,6 +73,8 @@ export default function Settings() {
               <div className="flex flex-wrap gap-3">
                 {APP_THEMES.map((option) => {
                   const selected = theme === option.id;
+                  const swatch =
+                    option.id === "custom" ? themeColor : option.swatch;
                   return (
                     <button
                       key={option.id}
@@ -86,7 +91,7 @@ export default function Settings() {
                             ? "border-accent"
                             : "border-line-strong hover:border-ink-subtle"
                         }`}
-                        style={{ backgroundColor: option.swatch }}
+                        style={{ backgroundColor: swatch }}
                       />
                       <span
                         className={`text-xs ${
@@ -99,6 +104,15 @@ export default function Settings() {
                   );
                 })}
               </div>
+              {theme === "custom" && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-ink">Custom colour</p>
+                  <p className="mt-1 mb-2 text-xs text-ink-muted">
+                    Drag the cursor on the pad, or pick a preset below.
+                  </p>
+                  <ColorPicker color={themeColor} onChange={setThemeColor} />
+                </div>
+              )}
             </div>
           </SettingsGroup>
 

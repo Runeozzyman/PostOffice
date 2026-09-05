@@ -1,29 +1,65 @@
 import { useEffect, useRef, useState } from "react";
 import { MAILSLOT_COLORS } from "../helpers/mailslotOptions";
-import { hexToHsv, hsvToHex } from "../helpers/color";
+import { hexToHsv, hsvToHex, normalizeHex } from "../helpers/color";
 
 interface ColorPickerProps {
   color: string;
   onChange: (color: string) => void;
 }
 
+function formatHexInput(hex: string) {
+  return hex.replace("#", "").toUpperCase();
+}
+
 export default function ColorPicker({ color, onChange }: ColorPickerProps) {
-  const hsv = hexToHsv(color);
+  const [liveColor, setLiveColor] = useState(color);
+  const [hexInput, setHexInput] = useState(formatHexInput(color));
+  const hsv = hexToHsv(liveColor);
   const [hue, setHue] = useState(hsv.h || 0);
   const hueRef = useRef(hue);
   const hsvRef = useRef(hsv);
+  const liveColorRef = useRef(liveColor);
+  const draggingRef = useRef(false);
+  const hexFocusedRef = useRef(false);
   const padRef = useRef<HTMLDivElement>(null);
   const hueBarRef = useRef<HTMLDivElement>(null);
 
   hueRef.current = hue;
   hsvRef.current = hsv;
+  liveColorRef.current = liveColor;
 
   useEffect(() => {
+    if (draggingRef.current) {
+      return;
+    }
+
+    setLiveColor(color);
+    liveColorRef.current = color;
     const next = hexToHsv(color);
     if (next.s > 0.01) {
       setHue(next.h);
     }
+    if (!hexFocusedRef.current) {
+      setHexInput(formatHexInput(color));
+    }
   }, [color]);
+
+  const preview = (next: string) => {
+    setLiveColor(next);
+    liveColorRef.current = next;
+    if (!hexFocusedRef.current) {
+      setHexInput(formatHexInput(next));
+    }
+  };
+
+  const commit = (next: string) => {
+    preview(next);
+    const parsed = hexToHsv(next);
+    if (parsed.s > 0.01) {
+      setHue(parsed.h);
+    }
+    onChange(next);
+  };
 
   const colorFromPad = (clientX: number, clientY: number) => {
     const pad = padRef.current;
@@ -37,7 +73,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
       1,
       Math.max(0, 1 - (clientY - bounds.top) / bounds.height)
     );
-    onChange(hsvToHex(hueRef.current, s, v));
+    preview(hsvToHex(hueRef.current, s, v));
   };
 
   const colorFromHue = (clientX: number) => {
@@ -52,7 +88,27 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
       Math.max(0, ((clientX - bounds.left) / bounds.width) * 360)
     );
     setHue(nextHue);
-    onChange(hsvToHex(nextHue, hsvRef.current.s, hsvRef.current.v));
+    preview(hsvToHex(nextHue, hsvRef.current.s, hsvRef.current.v));
+  };
+
+  const finishDrag = () => {
+    if (!draggingRef.current) {
+      return;
+    }
+
+    draggingRef.current = false;
+    onChange(liveColorRef.current);
+  };
+
+  const commitHexInput = () => {
+    const next = normalizeHex(hexInput);
+    if (next) {
+      commit(next);
+      setHexInput(formatHexInput(next));
+      return;
+    }
+
+    setHexInput(formatHexInput(liveColorRef.current));
   };
 
   return (
@@ -66,6 +122,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
         onPointerDown={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          draggingRef.current = true;
           event.currentTarget.setPointerCapture(event.pointerId);
           colorFromPad(event.clientX, event.clientY);
         }}
@@ -76,13 +133,15 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
 
           colorFromPad(event.clientX, event.clientY);
         }}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
       >
         <div
           className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow"
           style={{
             left: `${hsv.s * 100}%`,
             top: `${(1 - hsv.v) * 100}%`,
-            backgroundColor: color,
+            backgroundColor: liveColor,
           }}
         />
       </div>
@@ -96,6 +155,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
         onPointerDown={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          draggingRef.current = true;
           event.currentTarget.setPointerCapture(event.pointerId);
           colorFromHue(event.clientX);
         }}
@@ -106,6 +166,8 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
 
           colorFromHue(event.clientX);
         }}
+        onPointerUp={finishDrag}
+        onPointerCancel={finishDrag}
         role="slider"
         aria-label="Hue"
         aria-valuemin={0}
@@ -121,9 +183,32 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
       <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
         <span
           className="h-4 w-4 rounded-full border border-line"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: liveColor }}
         />
-        <span className="font-mono uppercase">{color}</span>
+        <span className="font-mono">#</span>
+        <input
+          type="text"
+          value={hexInput}
+          spellCheck={false}
+          aria-label="Hex colour"
+          maxLength={6}
+          onFocus={() => {
+            hexFocusedRef.current = true;
+          }}
+          onChange={(event) =>
+            setHexInput(event.target.value.replace("#", "").toUpperCase())
+          }
+          onBlur={() => {
+            hexFocusedRef.current = false;
+            commitHexInput();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
+          className="w-20 rounded border border-line bg-surface px-1 py-0.5 font-mono uppercase text-ink-secondary"
+        />
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
         {MAILSLOT_COLORS.map((value) => (
@@ -131,10 +216,12 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
             key={value}
             type="button"
             aria-label={value}
-            onClick={() => onChange(value)}
+            onClick={() => commit(value)}
             style={{ backgroundColor: value }}
             className={`h-8 w-8 rounded-full ${
-              color.toLowerCase() === value ? "ring-2 ring-ink ring-offset-2 ring-offset-surface" : ""
+              liveColor.toLowerCase() === value
+                ? "ring-2 ring-ink ring-offset-2 ring-offset-surface"
+                : ""
             }`}
           />
         ))}

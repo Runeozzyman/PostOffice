@@ -184,6 +184,26 @@ html.theme-brown {
   --danger-soft: #eadfcd;
 }
 
+html.theme-custom {
+  color-scheme: light;
+  --page: #c5d4f4;
+  --surface: #e8eefc;
+  --muted: #d7e1f8;
+  --hover: #cdd9f4;
+  --line: #9ab0e0;
+  --line-strong: #5a7ed4;
+  --ink: #14244c;
+  --ink-secondary: #3a4a78;
+  --ink-muted: #546890;
+  --ink-subtle: #7a88b0;
+  --ink-faint: #b4bcd8;
+  --on-ink: #e8eefc;
+  --accent: #2563eb;
+  --on-accent: #e8eefc;
+  --danger: #dc2626;
+  --danger-soft: #d4d8ec;
+}
+
 
 html.theme-transition:not(.reduce-motion),
 html.theme-transition:not(.reduce-motion) *:not(iframe) {

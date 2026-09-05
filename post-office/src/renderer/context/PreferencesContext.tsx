@@ -10,7 +10,9 @@ import {
 import {
   applyThemeClass,
   readStoredTheme,
+  readStoredThemeColor,
   storeTheme,
+  storeThemeColor,
   type Theme,
 } from "../helpers/theme";
 import {
@@ -38,6 +40,8 @@ import {
 interface PreferencesContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  themeColor: string;
+  setThemeColor: (color: string) => void;
   animationsEnabled: boolean;
   setAnimationsEnabled: (enabled: boolean) => void;
   font: AppFontId;
@@ -60,6 +64,13 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     applyThemeClass(initial);
     return initial;
   });
+  const [themeColor, setThemeColorState] = useState(() =>
+    readStoredThemeColor()
+  );
+  const themeRef = useRef(theme);
+  const themeColorRef = useRef(themeColor);
+  themeRef.current = theme;
+  themeColorRef.current = themeColor;
   const [animationsEnabled, setAnimationsEnabledState] = useState(() => {
     const initial = readStoredAnimationsEnabled();
     applyMotionClass(initial);
@@ -98,9 +109,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       }, 320);
     }
 
-    applyThemeClass(next);
+    applyThemeClass(next, themeColorRef.current);
     storeTheme(next);
     setThemeState(next);
+  }, []);
+
+  const setThemeColor = useCallback((color: string) => {
+    const next = storeThemeColor(color);
+    themeColorRef.current = next;
+    setThemeColorState(next);
+    applyThemeClass("custom", next);
+    if (themeRef.current !== "custom") {
+      storeTheme("custom");
+      setThemeState("custom");
+    }
   }, []);
 
   const setAnimationsEnabled = useCallback((enabled: boolean) => {
@@ -136,6 +158,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     () => ({
       theme,
       setTheme,
+      themeColor,
+      setThemeColor,
       animationsEnabled,
       setAnimationsEnabled,
       font,
@@ -150,6 +174,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [
       theme,
       setTheme,
+      themeColor,
+      setThemeColor,
       animationsEnabled,
       setAnimationsEnabled,
       font,
