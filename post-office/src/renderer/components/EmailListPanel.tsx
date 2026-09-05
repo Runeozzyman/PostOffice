@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Email, EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
@@ -15,6 +15,7 @@ import {
   withStarred,
   withTrashed,
 } from "../../helpers/emailLabels";
+import { isTypingTarget } from "../helpers/keyboard";
 import EmailRow from "./EmailRow";
 import EmailDetail from "./EmailDetail";
 
@@ -26,6 +27,8 @@ interface EmailListPanelProps {
   showMailslotColor: boolean;
   emptyMessage: string;
   searchPlaceholder?: string;
+  keyboardActive?: boolean;
+  canDragToMailslot?: boolean;
 }
 
 export default function EmailListPanel({
@@ -34,6 +37,8 @@ export default function EmailListPanel({
   showMailslotColor,
   emptyMessage,
   searchPlaceholder = "Search mail…",
+  keyboardActive = false,
+  canDragToMailslot = false,
 }: EmailListPanelProps) {
   const [emails, setEmails] = useState<Email[]>([]);
   const [mailslots, setMailslots] = useState<Mailslot[]>([]);
@@ -45,6 +50,8 @@ export default function EmailListPanel({
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<EmailDetailType | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const focusedRowRef = useRef<HTMLElement | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE) || 1);
 
@@ -58,6 +65,7 @@ export default function EmailListPanel({
 
   useEffect(() => {
     setPage(1);
+    setFocusedIndex(-1);
   }, [query, mailslotId, mailbox]);
 
   const loadPage = async () => {
@@ -234,12 +242,90 @@ export default function EmailListPanel({
       }
 
       setSelected(detail);
+      setFocusedIndex(
+        emails.findIndex((item) => item.id === email.id)
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open email.");
     } finally {
       setOpeningId(null);
     }
   };
+
+  useEffect(() => {
+    setFocusedIndex((current) => {
+      if (emails.length === 0) {
+        return -1;
+      }
+      if (current >= emails.length) {
+        return emails.length - 1;
+      }
+      return current;
+    });
+  }, [emails]);
+
+  useEffect(() => {
+    focusedRowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [focusedIndex, selected]);
+
+  useEffect(() => {
+    if (!keyboardActive) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (emails.length === 0) {
+        return;
+      }
+
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        const delta = event.key === "ArrowDown" ? 1 : -1;
+
+        if (selected) {
+          const currentIndex = emails.findIndex(
+            (item) => item.id === selected.id
+          );
+          const nextIndex = Math.min(
+            emails.length - 1,
+            Math.max(0, (currentIndex < 0 ? 0 : currentIndex) + delta)
+          );
+          const next = emails[nextIndex];
+          if (next && next.id !== selected.id) {
+            void openEmail(next);
+          }
+          return;
+        }
+
+        setFocusedIndex((current) => {
+          if (current < 0) {
+            return delta > 0 ? 0 : emails.length - 1;
+          }
+          return Math.min(emails.length - 1, Math.max(0, current + delta));
+        });
+        return;
+      }
+
+      if (event.key === "Enter" && !selected && focusedIndex >= 0) {
+        const email = emails[focusedIndex];
+        if (email) {
+          event.preventDefault();
+          void openEmail(email);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [keyboardActive, emails, selected, focusedIndex]);
 
   const goToPage = (nextPage: number) => {
     setPage(Math.min(pageCount, Math.max(1, nextPage)));
@@ -341,6 +427,9 @@ export default function EmailListPanel({
               mailbox={mailbox}
               showMailslotColor={showMailslotColor}
               animationIndex={index}
+              focused={index === focusedIndex}
+              rowRef={index === focusedIndex ? focusedRowRef : undefined}
+              canDrag={canDragToMailslot}
               onOpen={openEmail}
               onFiled={() => {
                 void loadPage();

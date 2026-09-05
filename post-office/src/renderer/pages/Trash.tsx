@@ -2,7 +2,11 @@ import ComposeButton from "../components/ComposeButton";
 import RefreshButton from "../components/RefreshButton";
 import EmailListPanel from "../components/EmailListPanel";
 
-export default function Trash() {
+export default function Trash({
+  keyboardActive = false,
+}: {
+  keyboardActive?: boolean;
+}) {
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
       <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
@@ -14,6 +18,7 @@ export default function Trash() {
         <EmailListPanel
           mailbox="trash"
           showMailslotColor={false}
+          keyboardActive={keyboardActive}
           searchPlaceholder="Search trash…"
           emptyMessage="Trash is empty."
         />

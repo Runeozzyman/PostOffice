@@ -22,3 +22,5 @@ export interface MailslotFiling {
   senderRuleIds: string[];
   domainRuleIds: string[];
 }
+
+export const MAX_MAILSLOTS = 12;

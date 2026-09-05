@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Mailslot, MailslotIcon } from "../types/mailslot";
+import { MAX_MAILSLOTS } from "../types/mailslot";
 import { getDb } from "./database";
 
 interface MailslotRecord {
@@ -89,6 +90,13 @@ export function createMailslot(input: {
   }
 
   const db = getDb();
+  const existing = asRow<{ count: number }>(
+    db.prepare(`SELECT COUNT(*) AS count FROM mailslots`).get()
+  );
+
+  if (Number(existing?.count ?? 0) >= MAX_MAILSLOTS) {
+    throw new Error(`You can have up to ${MAX_MAILSLOTS} mailslots.`);
+  }
   const maxOrder = asRow<{ max_order: number | null }>(
     db.prepare(`SELECT MAX(sort_order) AS max_order FROM mailslots`).get()
   );

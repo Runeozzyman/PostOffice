@@ -9,6 +9,7 @@ import MailslotEditorModal from "./MailslotEditorModal";
 
 interface MailslotViewProps {
   mailslot: Mailslot;
+  keyboardActive?: boolean;
   onBack: () => void;
   onUpdated: (mailslot: Mailslot) => void;
   onDeleted: (id: string) => void;
@@ -16,6 +17,7 @@ interface MailslotViewProps {
 
 export default function MailslotView({
   mailslot,
+  keyboardActive = false,
   onBack,
   onUpdated,
   onDeleted,
@@ -58,7 +60,8 @@ export default function MailslotView({
         <EmailListPanel
           mailslotId={mailslot.id}
           showMailslotColor={false}
-          emptyMessage="No messages in this mailslot yet. File mail from the inbox menu."
+          keyboardActive={keyboardActive}
+          emptyMessage="No messages in this mailslot yet. File mail from the inbox menu or drag a message onto a mailslot tab."
         />
       </div>
 

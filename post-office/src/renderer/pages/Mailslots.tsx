@@ -1,16 +1,27 @@
 import { useEffect, useState } from "react";
 import { FiPlus } from "react-icons/fi";
-import type { Mailslot } from "../../types/mailslot";
+import { MAX_MAILSLOTS, type Mailslot } from "../../types/mailslot";
 import MailslotCard from "../components/MailslotCard";
 import MailslotEditorModal from "../components/MailslotEditorModal";
 import MailslotView from "../components/MailslotView";
 
-export default function Mailslots() {
+interface MailslotsProps {
+  openedMailslotId: string | null;
+  onOpenMailslot: (id: string) => void;
+  onCloseMailslot: () => void;
+  keyboardActive: boolean;
+}
+
+export default function Mailslots({
+  openedMailslotId,
+  onOpenMailslot,
+  onCloseMailslot,
+  keyboardActive,
+}: MailslotsProps) {
   const [mailslots, setMailslots] = useState<Mailslot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editor, setEditor] = useState<"create" | Mailslot | null>(null);
-  const [selected, setSelected] = useState<Mailslot | null>(null);
 
   const load = async () => {
     try {
@@ -30,17 +41,27 @@ export default function Mailslots() {
     void load();
   }, []);
 
+  const selected =
+    mailslots.find((mailslot) => mailslot.id === openedMailslotId) ?? null;
+
+  useEffect(() => {
+    if (!openedMailslotId || loading || selected) {
+      return;
+    }
+    onCloseMailslot();
+  }, [openedMailslotId, loading, selected, onCloseMailslot]);
+
   if (selected) {
     return (
       <MailslotView
         mailslot={selected}
-        onBack={() => setSelected(null)}
-        onUpdated={(updated) => {
-          setSelected(updated);
+        keyboardActive={keyboardActive}
+        onBack={onCloseMailslot}
+        onUpdated={() => {
           void load();
         }}
         onDeleted={() => {
-          setSelected(null);
+          onCloseMailslot();
           void load();
         }}
       />
@@ -64,19 +85,25 @@ export default function Mailslots() {
                 key={mailslot.id}
                 mailslot={mailslot}
                 animationIndex={index}
-                onOpen={setSelected}
+                onOpen={(slot) => onOpenMailslot(slot.id)}
                 onEdit={setEditor}
               />
             ))}
 
-            <button
-              type="button"
-              onClick={() => setEditor("create")}
-              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface text-ink-muted transition-colors hover:border-ink-subtle hover:text-ink"
-            >
-              <FiPlus size={28} />
-              <span className="text-sm font-medium">New mailslot</span>
-            </button>
+            {mailslots.length < MAX_MAILSLOTS ? (
+              <button
+                type="button"
+                onClick={() => setEditor("create")}
+                className="flex aspect-square min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line-strong bg-surface text-ink-muted transition-colors hover:border-ink-subtle hover:text-ink"
+              >
+                <FiPlus size={28} />
+                <span className="text-sm font-medium">New mailslot</span>
+              </button>
+            ) : (
+              <p className="col-span-full text-sm text-ink-muted">
+                Maximum of {MAX_MAILSLOTS} mailslots.
+              </p>
+            )}
           </div>
         )}
       </div>

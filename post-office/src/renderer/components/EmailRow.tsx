@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type Ref } from "react";
 import { FiMoreHorizontal, FiRotateCcw, FiStar, FiTrash2 } from "react-icons/fi";
 import type { Email, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { formatListDate } from "../../helpers/formatListDate";
 import { parseFrom } from "../../helpers/parseFrom";
+import { EMAIL_DRAG_TYPE } from "../helpers/emailDrag";
 import EmailMailslotMenu from "./EmailMailslotMenu";
 
 interface EmailRowProps {
@@ -11,6 +12,9 @@ interface EmailRowProps {
   mailslots: Mailslot[];
   mailbox?: MailboxView;
   showMailslotColor: boolean;
+  focused?: boolean;
+  rowRef?: Ref<HTMLElement | null>;
+  canDrag?: boolean;
   onOpen: (email: Email) => void;
   onFiled: () => void;
   onTrashAction: (email: Email) => void;
@@ -27,6 +31,9 @@ export default function EmailRow({
   mailslots,
   mailbox = "inbox",
   showMailslotColor,
+  focused = false,
+  rowRef,
+  canDrag = false,
   onOpen,
   onFiled,
   onTrashAction,
@@ -110,9 +117,31 @@ export default function EmailRow({
 
   return (
     <article
+      ref={rowRef}
       role="button"
       tabIndex={0}
+      draggable={canDrag}
+      aria-selected={focused}
       onClick={() => onOpen(email)}
+      onDragStart={(event) => {
+        if (!canDrag) {
+          event.preventDefault();
+          return;
+        }
+
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          target.closest("button, a, input, textarea")
+        ) {
+          event.preventDefault();
+          return;
+        }
+
+        event.dataTransfer.setData(EMAIL_DRAG_TYPE, email.id);
+        event.dataTransfer.setData("text/plain", email.id);
+        event.dataTransfer.effectAllowed = "copy";
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -122,9 +151,15 @@ export default function EmailRow({
       style={{
         animationDelay: `${Math.min(animationIndex, 16) * 28}ms`,
         borderLeft: color ? `4px solid ${color}` : undefined,
-        backgroundColor: color ? `${color}14` : undefined,
+        backgroundColor: focused
+          ? "var(--hover)"
+          : color
+            ? `${color}14`
+            : undefined,
       }}
-      className="email-row-pop flex cursor-pointer items-center gap-3 border-b border-line px-4 py-3 hover:bg-hover"
+      className={`email-row-pop flex items-center gap-3 border-b border-line px-4 py-3 hover:bg-hover ${
+        canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+      } ${focused ? "bg-hover" : ""}`}
     >
       <button
         type="button"
