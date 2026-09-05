@@ -16,6 +16,8 @@ import {
   withTrashed,
 } from "../../helpers/emailLabels";
 import { isTypingTarget } from "../helpers/keyboard";
+import { matchesKeybind } from "../helpers/keybinds";
+import { usePreferences } from "../context/PreferencesContext";
 import {
   readMailslotListCache,
   writeMailslotListCache,
@@ -45,6 +47,7 @@ export default function EmailListPanel({
   keyboardActive = false,
   canDragToMailslot = false,
 }: EmailListPanelProps) {
+  const { shortcutsEnabled, keybinds } = usePreferences();
   const initialCached =
     mailslotId
       ? readMailslotListCache(mailslotId, 1, PAGE_SIZE, "")
@@ -295,7 +298,7 @@ export default function EmailListPanel({
   }, [focusedIndex, selected]);
 
   useEffect(() => {
-    if (!keyboardActive) {
+    if (!keyboardActive || !shortcutsEnabled) {
       return;
     }
 
@@ -308,11 +311,9 @@ export default function EmailListPanel({
         return;
       }
 
-      if (event.key === "b" || event.key === "B") {
-        if (selected) {
-          event.preventDefault();
-          setSelected(null);
-        }
+      if (matchesKeybind(event, keybinds.back) && selected) {
+        event.preventDefault();
+        setSelected(null);
         return;
       }
 
@@ -320,9 +321,12 @@ export default function EmailListPanel({
         return;
       }
 
-      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      if (
+        matchesKeybind(event, keybinds.nextMessage) ||
+        matchesKeybind(event, keybinds.prevMessage)
+      ) {
         event.preventDefault();
-        const delta = event.key === "ArrowDown" ? 1 : -1;
+        const delta = matchesKeybind(event, keybinds.nextMessage) ? 1 : -1;
 
         if (selected) {
           const currentIndex = emails.findIndex(
@@ -348,7 +352,11 @@ export default function EmailListPanel({
         return;
       }
 
-      if (event.key === "Enter" && !selected && focusedIndex >= 0) {
+      if (
+        matchesKeybind(event, keybinds.openMessage) &&
+        !selected &&
+        focusedIndex >= 0
+      ) {
         const email = emails[focusedIndex];
         if (email) {
           event.preventDefault();
@@ -359,7 +367,7 @@ export default function EmailListPanel({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [keyboardActive, emails, selected, focusedIndex]);
+  }, [keyboardActive, shortcutsEnabled, keybinds, emails, selected, focusedIndex]);
 
   useEffect(() => {
     if (!mailslotId || loading) {

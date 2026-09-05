@@ -9,6 +9,14 @@ import {
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
 } from "../helpers/typography";
+import KeybindCapture from "../components/KeybindCapture";
+import {
+  DEFAULT_KEYBINDS,
+  KEYBIND_ROWS,
+  getKeybind,
+  keybindConflict,
+  withUpdatedKeybind,
+} from "../helpers/keybinds";
 
 export default function Settings() {
   const {
@@ -20,6 +28,10 @@ export default function Settings() {
     setFont,
     fontSize,
     setFontSize,
+    shortcutsEnabled,
+    setShortcutsEnabled,
+    keybinds,
+    setKeybinds,
   } = usePreferences();
   const [sliderSize, setSliderSize] = useState(fontSize);
   const [inputSize, setInputSize] = useState(String(fontSize));
@@ -179,6 +191,68 @@ export default function Settings() {
                   );
                 })}
               </div>
+            </div>
+          </SettingsGroup>
+
+          <SettingsGroup
+            title="Keyboard"
+            description="Shortcuts for moving around the app. They never fire while you are typing."
+          >
+            <div className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink">
+                  Disable keybind navigation
+                </p>
+                <p className="text-sm text-ink-muted">
+                  Turn off inbox, compose, mailslot, and list shortcuts.
+                </p>
+              </div>
+              <SettingsToggle
+                label="Disable keybind navigation"
+                checked={!shortcutsEnabled}
+                onChange={(disabled) => setShortcutsEnabled(!disabled)}
+              />
+            </div>
+            {KEYBIND_ROWS.map((row) => (
+              <KeybindCapture
+                key={row.id}
+                label={row.label}
+                value={getKeybind(keybinds, row.id)}
+                disabled={!shortcutsEnabled}
+                onChange={(key) => {
+                  if (key) {
+                    const conflict = keybindConflict(keybinds, row.id, key);
+                    if (conflict) {
+                      const other =
+                        KEYBIND_ROWS.find((item) => item.id === conflict)
+                          ?.label ?? conflict;
+                      return `Already used by ${other}`;
+                    }
+                  }
+
+                  setKeybinds(withUpdatedKeybind(keybinds, row.id, key));
+                  return null;
+                }}
+              />
+            ))}
+            <div className="px-4 py-3">
+              <button
+                type="button"
+                disabled={!shortcutsEnabled}
+                onClick={() =>
+                  setKeybinds({
+                    ...DEFAULT_KEYBINDS,
+                    mailslots: [...DEFAULT_KEYBINDS.mailslots],
+                  })
+                }
+                className="text-sm text-ink-secondary hover:text-ink disabled:opacity-50"
+              >
+                Reset to defaults
+              </button>
+              <p className="mt-1 text-xs text-ink-muted">
+                Click a key, then press the new shortcut. Escape cancels.
+                Backspace clears a bind.
+              </p>
             </div>
           </SettingsGroup>
 

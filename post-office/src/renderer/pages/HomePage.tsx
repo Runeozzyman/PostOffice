@@ -11,12 +11,15 @@ import Trash from "./Trash";
 
 import { useCallback, useEffect, useState } from "react";
 import { useCompose } from "../context/ComposeContext";
+import { usePreferences } from "../context/PreferencesContext";
 import { isTypingTarget } from "../helpers/keyboard";
+import { mailslotIndexFromKeybind, matchesKeybind } from "../helpers/keybinds";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
-import { mailslotIndexFromKey, type Mailslot } from "../../types/mailslot";
+import type { Mailslot } from "../../types/mailslot";
 
 const HomePage = () => {
   const { openCompose } = useCompose();
+  const { shortcutsEnabled, keybinds } = usePreferences();
   const [currentPage, setCurrentPage] = useState("mailslots");
   const [openedMailslotId, setOpenedMailslotId] = useState<string | null>(
     null
@@ -66,6 +69,10 @@ const HomePage = () => {
   }, []);
 
   useEffect(() => {
+    if (!shortcutsEnabled) {
+      return;
+    }
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) {
         return;
@@ -75,21 +82,19 @@ const HomePage = () => {
         return;
       }
 
-      const key = event.key;
-
-      if (key === "i" || key === "I") {
+      if (matchesKeybind(event, keybinds.inbox)) {
         event.preventDefault();
         goToPage("inbox");
         return;
       }
 
-      if (key === "c" || key === "C") {
+      if (matchesKeybind(event, keybinds.compose)) {
         event.preventDefault();
         openCompose();
         return;
       }
 
-      const slotIndex = mailslotIndexFromKey(key);
+      const slotIndex = mailslotIndexFromKeybind(event, keybinds.mailslots);
       if (slotIndex !== null) {
         const slot = mailslots[slotIndex];
         if (!slot) {
@@ -102,7 +107,14 @@ const HomePage = () => {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [goToPage, mailslots, openCompose, openMailslot]);
+  }, [
+    goToPage,
+    keybinds,
+    mailslots,
+    openCompose,
+    openMailslot,
+    shortcutsEnabled,
+  ]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-page">

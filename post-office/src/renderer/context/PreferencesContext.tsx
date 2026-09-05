@@ -27,6 +27,13 @@ import {
   storeFontSize,
   type AppFontId,
 } from "../helpers/typography";
+import {
+  readStoredKeybinds,
+  readStoredShortcutsEnabled,
+  storeKeybinds,
+  storeShortcutsEnabled,
+  type AppKeybinds,
+} from "../helpers/keybinds";
 
 interface PreferencesContextValue {
   theme: Theme;
@@ -37,6 +44,10 @@ interface PreferencesContextValue {
   setFont: (font: AppFontId) => void;
   fontSize: number;
   setFontSize: (size: number) => void;
+  shortcutsEnabled: boolean;
+  setShortcutsEnabled: (enabled: boolean) => void;
+  keybinds: AppKeybinds;
+  setKeybinds: (keybinds: AppKeybinds) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | undefined>(
@@ -67,6 +78,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const fontSizeRef = useRef(fontSize);
   fontRef.current = font;
   fontSizeRef.current = fontSize;
+  const [shortcutsEnabled, setShortcutsEnabledState] = useState(() =>
+    readStoredShortcutsEnabled()
+  );
+  const [keybinds, setKeybindsState] = useState<AppKeybinds>(() =>
+    readStoredKeybinds()
+  );
 
   const setTheme = useCallback((next: Theme) => {
     const root = document.documentElement;
@@ -105,6 +122,16 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setFontSizeState(size);
   }, []);
 
+  const setShortcutsEnabled = useCallback((enabled: boolean) => {
+    storeShortcutsEnabled(enabled);
+    setShortcutsEnabledState(enabled);
+  }, []);
+
+  const setKeybinds = useCallback((next: AppKeybinds) => {
+    storeKeybinds(next);
+    setKeybindsState(next);
+  }, []);
+
   const value = useMemo(
     () => ({
       theme,
@@ -115,6 +142,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setFont,
       fontSize,
       setFontSize,
+      shortcutsEnabled,
+      setShortcutsEnabled,
+      keybinds,
+      setKeybinds,
     }),
     [
       theme,
@@ -125,6 +156,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setFont,
       fontSize,
       setFontSize,
+      shortcutsEnabled,
+      setShortcutsEnabled,
+      keybinds,
+      setKeybinds,
     ]
   );
 

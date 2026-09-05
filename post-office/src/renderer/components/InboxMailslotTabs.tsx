@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { MAX_MAILSLOTS, mailslotShortcutKey, type Mailslot } from "../../types/mailslot";
+import { MAX_MAILSLOTS, type Mailslot } from "../../types/mailslot";
+import { formatKeybind } from "../helpers/keybinds";
+import { usePreferences } from "../context/PreferencesContext";
 import { EMAIL_DRAG_TYPE } from "../helpers/emailDrag";
 import { mailslotIcon } from "../helpers/mailslotOptions";
 
@@ -16,6 +18,7 @@ export default function InboxMailslotTabs({
   onOpen,
   onFileEmail,
 }: InboxMailslotTabsProps) {
+  const { shortcutsEnabled, keybinds } = usePreferences();
   const [overId, setOverId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const visible = mailslots.slice(0, MAX_MAILSLOTS);
@@ -28,7 +31,10 @@ export default function InboxMailslotTabs({
     <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-line px-4 py-2">
       {visible.map((mailslot, index) => {
         const Icon = mailslotIcon(mailslot.icon);
-        const shortcut = mailslotShortcutKey(index);
+        const shortcut =
+          shortcutsEnabled && keybinds.mailslots[index]
+            ? formatKeybind(keybinds.mailslots[index])
+            : null;
         const lit =
           overId === mailslot.id ||
           hoveredId === mailslot.id ||
