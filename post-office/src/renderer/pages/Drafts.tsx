@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FiPaperclip, FiTrash2 } from "react-icons/fi";
 import ComposeButton from "../components/ComposeButton";
 import { useCompose } from "../context/ComposeContext";
+import { usePreferences } from "../context/PreferencesContext";
 import { formatListDate } from "../../helpers/formatListDate";
 import { DRAFTS_CHANGED_EVENT, notifyDraftsChanged } from "../helpers/draftEvents";
+import { isTypingTarget } from "../helpers/keyboard";
+import { matchesKeybind } from "../helpers/keybinds";
 import type { StoredDraft } from "../../types/compose";
 
 function draftSnippet(draft: StoredDraft) {
@@ -11,8 +14,14 @@ function draftSnippet(draft: StoredDraft) {
   return line || "No message text";
 }
 
-export default function Drafts() {
+export default function Drafts({
+  keyboardActive = false,
+}: {
+  keyboardActive?: boolean;
+}) {
   const { openCompose, activeDraftId, close } = useCompose();
+  const { shortcutsEnabled, keybinds } = usePreferences();
+  const searchRef = useRef<HTMLInputElement>(null);
   const [drafts, setDrafts] = useState<StoredDraft[]>([]);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
@@ -55,6 +64,55 @@ export default function Drafts() {
       window.removeEventListener(DRAFTS_CHANGED_EVENT, onChanged);
     };
   }, []);
+
+  useEffect(() => {
+    if (!keyboardActive) {
+      return;
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      const searchEl = searchRef.current;
+      if (searchEl && event.target === searchEl) {
+        event.preventDefault();
+        searchEl.blur();
+      }
+    };
+
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [keyboardActive]);
+
+  useEffect(() => {
+    if (!keyboardActive || !shortcutsEnabled) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (matchesKeybind(event, keybinds.search)) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [keyboardActive, shortcutsEnabled, keybinds]);
 
   const visible = useMemo(() => {
     if (!query) {
@@ -99,6 +157,7 @@ export default function Drafts() {
 
       <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
         <input
+          ref={searchRef}
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}

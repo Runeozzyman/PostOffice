@@ -63,7 +63,9 @@ export default function EmailListPanel({
   const [selected, setSelected] = useState<EmailDetailType | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [focusSearch, setFocusSearch] = useState(false);
   const focusedRowRef = useRef<HTMLElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE) || 1);
 
@@ -298,6 +300,37 @@ export default function EmailListPanel({
   }, [focusedIndex, selected]);
 
   useEffect(() => {
+    if (!keyboardActive) {
+      return;
+    }
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      const searchEl = searchRef.current;
+      if (searchEl && event.target === searchEl) {
+        event.preventDefault();
+        searchEl.blur();
+        return;
+      }
+
+      if (selected && !isTypingTarget(event.target)) {
+        event.preventDefault();
+        setSelected(null);
+      }
+    };
+
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [keyboardActive, selected]);
+
+  useEffect(() => {
     if (!keyboardActive || !shortcutsEnabled) {
       return;
     }
@@ -308,6 +341,15 @@ export default function EmailListPanel({
       }
 
       if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      if (matchesKeybind(event, keybinds.search)) {
+        event.preventDefault();
+        if (selected) {
+          setSelected(null);
+        }
+        setFocusSearch(true);
         return;
       }
 
@@ -368,6 +410,15 @@ export default function EmailListPanel({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [keyboardActive, shortcutsEnabled, keybinds, emails, selected, focusedIndex]);
+
+  useEffect(() => {
+    if (!focusSearch || selected) {
+      return;
+    }
+
+    searchRef.current?.focus();
+    setFocusSearch(false);
+  }, [focusSearch, selected]);
 
   useEffect(() => {
     if (!mailslotId || loading) {
@@ -458,6 +509,7 @@ export default function EmailListPanel({
     <div className="flex h-full min-w-0 flex-col bg-surface">
       <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
         <input
+          ref={searchRef}
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}

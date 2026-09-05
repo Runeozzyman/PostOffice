@@ -168,7 +168,7 @@ const HomePage = () => {
             currentPage === "drafts" ? "h-full min-w-0" : "hidden"
           }
         >
-          <Drafts />
+          <Drafts keyboardActive={currentPage === "drafts"} />
         </div>
         <div
           className={

@@ -10,6 +10,7 @@ export interface AppKeybinds {
   nextMessage: string;
   prevMessage: string;
   openMessage: string;
+  search: string;
   mailslots: string[];
 }
 
@@ -20,6 +21,7 @@ export const DEFAULT_KEYBINDS: AppKeybinds = {
   nextMessage: "ArrowDown",
   prevMessage: "ArrowUp",
   openMessage: "Enter",
+  search: "s",
   mailslots: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
 };
 
@@ -33,6 +35,7 @@ export const KEYBIND_ROWS: {
   { id: "nextMessage", label: "Next message" },
   { id: "prevMessage", label: "Previous message" },
   { id: "openMessage", label: "Open focused message" },
+  { id: "search", label: "Focus search" },
   ...Array.from({ length: MAX_MAILSLOTS }, (_, index) => ({
     id: `mailslot:${index}` as const,
     label: `Open mailslot ${index + 1}`,
@@ -174,6 +177,10 @@ export function readStoredKeybinds(): AppKeybinds {
         typeof parsed.openMessage === "string"
           ? parsed.openMessage
           : DEFAULT_KEYBINDS.openMessage,
+      search:
+        typeof parsed.search === "string"
+          ? normalizeKey(parsed.search)
+          : DEFAULT_KEYBINDS.search,
       mailslots,
     };
   } catch {
@@ -205,6 +212,7 @@ export function keybindConflict(
     ["nextMessage", keybinds.nextMessage],
     ["prevMessage", keybinds.prevMessage],
     ["openMessage", keybinds.openMessage],
+    ["search", keybinds.search],
   ];
 
   for (const [id, value] of named) {
