@@ -12,7 +12,7 @@ Customization — Users can define how their email is organized rather than rely
 Local-first performance — Emails are stored locally so previously retrieved messages can be accessed without repeatedly making expensive API requests. This also means any sensitive information is not exposed.
 Desktop experience — A dedicated application provides a more controlled, convenient, and customizable environment than a traditional web-based mail client.
 
-#How It Works
+# How It Works
 
 PostOffice uses the official Gmail API and services to connect with your personal Gmail account. Upon successful connection, PostOffice begins incrementally fetching emails in batches, and storing them in a local
 SQLite database. Subsequent interactions can then query from the local database rather than making repeated API requests from the Gmail API.
