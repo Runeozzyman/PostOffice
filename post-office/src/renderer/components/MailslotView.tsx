@@ -2,14 +2,18 @@ import { useState } from "react";
 import { FiEdit2 } from "react-icons/fi";
 import type { Mailslot } from "../../types/mailslot";
 import { mailslotIcon } from "../helpers/mailslotOptions";
+import { notifyEmailsChanged } from "../helpers/emailEvents";
 import ComposeButton from "./ComposeButton";
 import RefreshButton from "./RefreshButton";
 import EmailListPanel from "./EmailListPanel";
+import InboxMailslotTabs from "./InboxMailslotTabs";
 import MailslotEditorModal from "./MailslotEditorModal";
 
 interface MailslotViewProps {
   mailslot: Mailslot;
+  mailslots: Mailslot[];
   keyboardActive?: boolean;
+  onOpenMailslot: (id: string) => void;
   onBack: () => void;
   onUpdated: (mailslot: Mailslot) => void;
   onDeleted: (id: string) => void;
@@ -17,13 +21,31 @@ interface MailslotViewProps {
 
 export default function MailslotView({
   mailslot,
+  mailslots,
   keyboardActive = false,
+  onOpenMailslot,
   onBack,
   onUpdated,
   onDeleted,
 }: MailslotViewProps) {
   const [editing, setEditing] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   const Icon = mailslotIcon(mailslot.icon);
+
+  const fileEmail = async (emailId: string, mailslotId: string) => {
+    try {
+      await window.electronAPI.applyEmailMailslots({
+        emailId,
+        selectedSlotId: mailslotId,
+      });
+      setFileError(null);
+      notifyEmailsChanged();
+    } catch (err) {
+      setFileError(
+        err instanceof Error ? err.message : "Could not file this message."
+      );
+    }
+  };
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
@@ -56,11 +78,24 @@ export default function MailslotView({
         <ComposeButton />
       </div>
 
+      <InboxMailslotTabs
+        mailslots={mailslots}
+        activeId={mailslot.id}
+        onOpen={(slot) => onOpenMailslot(slot.id)}
+        onFileEmail={(emailId, mailslotId) => {
+          void fileEmail(emailId, mailslotId);
+        }}
+      />
+      {fileError && (
+        <p className="shrink-0 px-4 py-2 text-sm text-danger">{fileError}</p>
+      )}
+
       <div className="min-h-0 flex-1">
         <EmailListPanel
           mailslotId={mailslot.id}
           showMailslotColor={false}
           keyboardActive={keyboardActive}
+          canDragToMailslot
           emptyMessage="No messages in this mailslot yet. File mail from the inbox menu or drag a message onto a mailslot tab."
         />
       </div>

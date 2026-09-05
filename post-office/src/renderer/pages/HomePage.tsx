@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useCompose } from "../context/ComposeContext";
 import { isTypingTarget } from "../helpers/keyboard";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
-import type { Mailslot } from "../../types/mailslot";
+import { mailslotIndexFromKey, type Mailslot } from "../../types/mailslot";
 
 const HomePage = () => {
   const { openCompose } = useCompose();
@@ -89,8 +89,9 @@ const HomePage = () => {
         return;
       }
 
-      if (key >= "1" && key <= "9") {
-        const slot = mailslots[Number(key) - 1];
+      const slotIndex = mailslotIndexFromKey(key);
+      if (slotIndex !== null) {
+        const slot = mailslots[slotIndex];
         if (!slot) {
           return;
         }

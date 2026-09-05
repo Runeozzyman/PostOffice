@@ -1,17 +1,18 @@
 import { useState } from "react";
-import type { Mailslot } from "../../types/mailslot";
-import { MAX_MAILSLOTS } from "../../types/mailslot";
+import { MAX_MAILSLOTS, mailslotShortcutKey, type Mailslot } from "../../types/mailslot";
 import { EMAIL_DRAG_TYPE } from "../helpers/emailDrag";
 import { mailslotIcon } from "../helpers/mailslotOptions";
 
 interface InboxMailslotTabsProps {
   mailslots: Mailslot[];
+  activeId?: string | null;
   onOpen: (mailslot: Mailslot) => void;
   onFileEmail: (emailId: string, mailslotId: string) => void;
 }
 
 export default function InboxMailslotTabs({
   mailslots,
+  activeId = null,
   onOpen,
   onFileEmail,
 }: InboxMailslotTabsProps) {
@@ -27,8 +28,11 @@ export default function InboxMailslotTabs({
     <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-line px-4 py-2">
       {visible.map((mailslot, index) => {
         const Icon = mailslotIcon(mailslot.icon);
-        const shortcut = index < 9 ? String(index + 1) : null;
-        const lit = overId === mailslot.id || hoveredId === mailslot.id;
+        const shortcut = mailslotShortcutKey(index);
+        const lit =
+          overId === mailslot.id ||
+          hoveredId === mailslot.id ||
+          activeId === mailslot.id;
 
         return (
           <button

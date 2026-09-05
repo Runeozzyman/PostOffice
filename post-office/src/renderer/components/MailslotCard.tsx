@@ -23,7 +23,7 @@ export default function MailslotCard({
         backgroundColor: mailslot.color,
         animationDelay: `${Math.min(animationIndex, 12) * 40}ms`,
       }}
-      className="mailslot-pop relative flex aspect-square min-w-0 flex-col justify-between rounded-2xl p-4 text-left text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+      className="mailslot-pop relative flex h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-2xl p-3 text-left text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
     >
       <button
         type="button"
@@ -32,7 +32,7 @@ export default function MailslotCard({
         aria-label={`Open ${mailslot.title}`}
       />
       <div className="relative z-10 flex items-start justify-between">
-        <Icon size={28} className="pointer-events-none shrink-0" />
+        <Icon size={22} className="pointer-events-none shrink-0" />
         <button
           type="button"
           aria-label={`Edit ${mailslot.title}`}
