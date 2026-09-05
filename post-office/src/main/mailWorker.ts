@@ -30,10 +30,11 @@ import {
 import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
 import { sendGmailMessage } from "../services/gmailSend";
 import { setGmailStarred } from "../services/gmailStar";
-import { syncInboxEmails } from "../services/gmailSync";
+import { syncInboxEmails, syncNewInboxEmails } from "../services/gmailSync";
 import { trashGmailMessage, untrashGmailMessage } from "../services/gmailTrash";
 import { listGmailSignatures, clearGmailSignatureCache } from "../services/gmailSignatures";
 import type { ComposeDraft } from "../types/compose";
+import type { Email } from "../types/email";
 import type { MailFromWorker, MailMethod, MailRequest, MailToWorker } from "./mailProtocol";
 
 interface ParentPort {
@@ -64,6 +65,56 @@ function asErrorMessage(error: unknown) {
 }
 
 let mailboxSyncInFlight = false;
+let inboxPollTimer: ReturnType<typeof setInterval> | null = null;
+const INBOX_POLL_MS = 20_000;
+
+async function runInboxSync(mode: "full" | "poll") {
+  if (mode === "poll" && mailboxSyncInFlight) {
+    return 0;
+  }
+
+  while (mailboxSyncInFlight) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  mailboxSyncInFlight = true;
+  try {
+    const onStored = (email: Email) => {
+      send({ kind: "event", event: "email-stored", payload: email });
+    };
+
+    const stored =
+      mode === "full"
+        ? await syncInboxEmails(onStored, (progress) => {
+            send({
+              kind: "event",
+              event: "sync-progress",
+              payload: progress,
+            });
+          })
+        : await syncNewInboxEmails(onStored);
+
+    if (stored > 0) {
+      rebuildAddressContactsCache();
+    }
+
+    return stored;
+  } finally {
+    mailboxSyncInFlight = false;
+  }
+}
+
+function startInboxPoll() {
+  if (inboxPollTimer) {
+    return;
+  }
+
+  inboxPollTimer = setInterval(() => {
+    void runInboxSync("poll").catch((error: unknown) => {
+      console.warn("Background inbox poll failed.", error);
+    });
+  }, INBOX_POLL_MS);
+}
 
 async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
   switch (method) {
@@ -78,32 +129,8 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
         }
       );
     case "syncEmails": {
-      if (mailboxSyncInFlight) {
-        return;
-      }
-
-      mailboxSyncInFlight = true;
-      try {
-        const stored = await syncInboxEmails(
-          (email) => {
-            send({ kind: "event", event: "email-stored", payload: email });
-          },
-          (progress) => {
-            send({
-              kind: "event",
-              event: "sync-progress",
-              payload: progress,
-            });
-          }
-        );
-
-        if (stored > 0) {
-          rebuildAddressContactsCache();
-        }
-        return;
-      } finally {
-        mailboxSyncInFlight = false;
-      }
+      await runInboxSync("full");
+      return;
     }
     case "listMailslots":
       return listMailslots();
@@ -326,6 +353,7 @@ port.on("message", (event) => {
       initDatabase();
       backfillSenderFields();
       rebuildAddressContactsCache();
+      startInboxPoll();
       send({ kind: "ready" });
     } catch (error) {
       send({ kind: "fatal", error: asErrorMessage(error) });

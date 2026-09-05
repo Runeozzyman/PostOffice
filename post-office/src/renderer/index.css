@@ -228,6 +228,22 @@ html.reduce-motion .mailslot-pop:hover {
   }
 }
 
+@font-face {
+  font-family: "Asap Sharp";
+  src: url("./assets/fonts/AsapSharp-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Asap Sharp";
+  src: url("./assets/fonts/AsapSharp-Italic-Variable.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --app-font-size: 16px;
   --app-font: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

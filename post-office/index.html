@@ -19,12 +19,17 @@
         }
         var fonts = {
           default: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
-          segoe: '"Segoe UI", system-ui, sans-serif',
+          arial: "Arial, Helvetica, sans-serif",
           calibri: 'Calibri, Carlito, "Segoe UI", sans-serif',
+          times: '"Times New Roman", Times, serif',
           georgia: "Georgia, serif",
           palatino: '"Palatino Linotype", Palatino, "Book Antiqua", serif',
+          segoe: '"Segoe UI", system-ui, sans-serif',
           verdana: "Verdana, Geneva, sans-serif",
           trebuchet: '"Trebuchet MS", "Segoe UI", sans-serif',
+          roboto: "Roboto, Arial, sans-serif",
+          montserrat: "Montserrat, system-ui, sans-serif",
+          asapSharp: '"Asap Sharp", system-ui, sans-serif',
         };
         var font = localStorage.getItem("postoffice.font");
         if (font && fonts[font]) {

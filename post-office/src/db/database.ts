@@ -156,6 +156,13 @@ function migrate(database: DatabaseSync) {
       FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE
     )
   `);
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
 }
 
 function collapseExclusiveMailslots(database: DatabaseSync) {

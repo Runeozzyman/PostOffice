@@ -12,14 +12,19 @@ export const APP_FONTS = [
     family: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   {
-    id: "segoe",
-    label: "Segoe UI",
-    family: '"Segoe UI", system-ui, sans-serif',
+    id: "arial",
+    label: "Arial",
+    family: "Arial, Helvetica, sans-serif",
   },
   {
     id: "calibri",
     label: "Calibri",
     family: 'Calibri, Carlito, "Segoe UI", sans-serif',
+  },
+  {
+    id: "times",
+    label: "Times New Roman",
+    family: '"Times New Roman", Times, serif',
   },
   {
     id: "georgia",
@@ -32,6 +37,11 @@ export const APP_FONTS = [
     family: '"Palatino Linotype", Palatino, "Book Antiqua", serif',
   },
   {
+    id: "segoe",
+    label: "Segoe UI",
+    family: '"Segoe UI", system-ui, sans-serif',
+  },
+  {
     id: "verdana",
     label: "Verdana",
     family: "Verdana, Geneva, sans-serif",
@@ -40,6 +50,21 @@ export const APP_FONTS = [
     id: "trebuchet",
     label: "Trebuchet",
     family: '"Trebuchet MS", "Segoe UI", sans-serif',
+  },
+  {
+    id: "roboto",
+    label: "Roboto",
+    family: "Roboto, Arial, sans-serif",
+  },
+  {
+    id: "montserrat",
+    label: "Montserrat",
+    family: "Montserrat, system-ui, sans-serif",
+  },
+  {
+    id: "asapSharp",
+    label: "Asap Sharp",
+    family: '"Asap Sharp", system-ui, sans-serif',
   },
 ] as const;
 

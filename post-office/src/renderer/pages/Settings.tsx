@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
+import { FiPlus, FiX } from "react-icons/fi";
 import ColorPicker from "../components/ColorPicker";
 import SettingsGroup from "../components/SettingsGroup";
 import SettingsToggle from "../components/SettingsToggle";
 import SignOutButton from "../components/SignOutButton";
 import { usePreferences } from "../context/PreferencesContext";
+import {
+  appearanceMatches,
+  appearanceSwatch,
+} from "../helpers/appearancePresets";
 import { APP_THEMES } from "../helpers/theme";
 import {
   APP_FONTS,
@@ -35,6 +40,10 @@ export default function Settings() {
     setShortcutsEnabled,
     keybinds,
     setKeybinds,
+    appearancePresets,
+    saveAppearancePreset,
+    applyAppearancePreset,
+    clearAppearancePreset,
   } = usePreferences();
   const [sliderSize, setSliderSize] = useState(fontSize);
   const [inputSize, setInputSize] = useState(String(fontSize));
@@ -113,6 +122,79 @@ export default function Settings() {
                   <ColorPicker color={themeColor} onChange={setThemeColor} />
                 </div>
               )}
+            </div>
+          </SettingsGroup>
+
+          <SettingsGroup
+            title="Presets"
+            description="Save the current font, size, and colours into an empty slot. Click a saved slot to restore it."
+          >
+            <div className="grid grid-cols-1 gap-3 px-4 py-3 sm:grid-cols-3">
+              {appearancePresets.map((preset, index) => {
+                if (!preset) {
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => saveAppearancePreset(index)}
+                      className="flex min-h-[5.5rem] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line-strong px-3 py-3 text-ink-muted hover:border-ink-subtle hover:bg-hover hover:text-ink"
+                    >
+                      <FiPlus size={18} />
+                      <span className="text-sm">Empty</span>
+                      <span className="text-xs">Save current look</span>
+                    </button>
+                  );
+                }
+
+                const fontOption = APP_FONTS.find((item) => item.id === preset.font);
+                const themeLabel =
+                  APP_THEMES.find((item) => item.id === preset.theme)?.label ??
+                  preset.theme;
+                const active = appearanceMatches(preset, {
+                  theme,
+                  themeColor,
+                  font,
+                  fontSize,
+                });
+
+                return (
+                  <div key={index} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => applyAppearancePreset(index)}
+                      aria-pressed={active}
+                      className={`flex min-h-[5.5rem] w-full flex-col items-start gap-1 rounded-lg border px-3 py-3 pr-8 text-left ${
+                        active
+                          ? "border-ink bg-hover"
+                          : "border-line hover:bg-hover"
+                      }`}
+                    >
+                      <span
+                        className="h-5 w-5 rounded-full border border-line-strong"
+                        style={{ backgroundColor: appearanceSwatch(preset) }}
+                      />
+                      <span
+                        className="text-sm font-medium text-ink"
+                        style={{ fontFamily: fontOption?.family }}
+                      >
+                        {fontOption?.label ?? preset.font} · {preset.fontSize}px
+                      </span>
+                      <span className="text-xs text-ink-muted">{themeLabel}</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Clear preset ${index + 1}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        clearAppearancePreset(index);
+                      }}
+                      className="absolute top-1.5 right-1.5 rounded-md p-1 text-ink-subtle hover:bg-muted hover:text-ink"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </SettingsGroup>
 

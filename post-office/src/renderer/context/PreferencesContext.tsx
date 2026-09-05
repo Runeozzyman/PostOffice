@@ -30,6 +30,12 @@ import {
   type AppFontId,
 } from "../helpers/typography";
 import {
+  readStoredAppearancePresets,
+  storeAppearancePresets,
+  type AppearancePreset,
+  type AppearanceSnapshot,
+} from "../helpers/appearancePresets";
+import {
   readStoredKeybinds,
   readStoredShortcutsEnabled,
   storeKeybinds,
@@ -52,6 +58,10 @@ interface PreferencesContextValue {
   setShortcutsEnabled: (enabled: boolean) => void;
   keybinds: AppKeybinds;
   setKeybinds: (keybinds: AppKeybinds) => void;
+  appearancePresets: AppearancePreset[];
+  saveAppearancePreset: (index: number) => void;
+  applyAppearancePreset: (index: number) => void;
+  clearAppearancePreset: (index: number) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | undefined>(
@@ -95,8 +105,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [keybinds, setKeybindsState] = useState<AppKeybinds>(() =>
     readStoredKeybinds()
   );
+  const [appearancePresets, setAppearancePresets] = useState<AppearancePreset[]>(
+    () => readStoredAppearancePresets()
+  );
 
-  const setTheme = useCallback((next: Theme) => {
+  const beginThemeTransition = () => {
     const root = document.documentElement;
     const reduceMotion =
       !animationsEnabledRef.current ||
@@ -108,10 +121,77 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         root.classList.remove("theme-transition");
       }, 320);
     }
+  };
 
+  const currentSnapshot = (): AppearanceSnapshot => ({
+    theme: themeRef.current,
+    themeColor: themeColorRef.current,
+    font: fontRef.current,
+    fontSize: fontSizeRef.current,
+  });
+
+  const applySnapshot = useCallback((snapshot: AppearanceSnapshot) => {
+    beginThemeTransition();
+
+    const color = storeThemeColor(snapshot.themeColor);
+    themeColorRef.current = color;
+    applyThemeClass(snapshot.theme, color);
+    storeTheme(snapshot.theme);
+    setThemeState(snapshot.theme);
+    setThemeColorState(color);
+
+    const size = clampFontSize(snapshot.fontSize);
+    applyTypography(snapshot.font, size);
+    storeFont(snapshot.font);
+    storeFontSize(size);
+    fontRef.current = snapshot.font;
+    fontSizeRef.current = size;
+    setFontState(snapshot.font);
+    setFontSizeState(size);
+  }, []);
+
+  const setTheme = useCallback((next: Theme) => {
+    beginThemeTransition();
     applyThemeClass(next, themeColorRef.current);
     storeTheme(next);
     setThemeState(next);
+  }, []);
+
+  const saveAppearancePreset = useCallback((index: number) => {
+    setAppearancePresets((current) => {
+      if (index < 0 || index >= current.length || current[index]) {
+        return current;
+      }
+
+      const next = [...current];
+      next[index] = currentSnapshot();
+      storeAppearancePresets(next);
+      return next;
+    });
+  }, []);
+
+  const applyAppearancePreset = useCallback(
+    (index: number) => {
+      const preset = appearancePresets[index];
+      if (!preset) {
+        return;
+      }
+      applySnapshot(preset);
+    },
+    [appearancePresets, applySnapshot]
+  );
+
+  const clearAppearancePreset = useCallback((index: number) => {
+    setAppearancePresets((current) => {
+      if (index < 0 || index >= current.length || !current[index]) {
+        return current;
+      }
+
+      const next = [...current];
+      next[index] = null;
+      storeAppearancePresets(next);
+      return next;
+    });
   }, []);
 
   const setThemeColor = useCallback((color: string) => {
@@ -170,6 +250,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setShortcutsEnabled,
       keybinds,
       setKeybinds,
+      appearancePresets,
+      saveAppearancePreset,
+      applyAppearancePreset,
+      clearAppearancePreset,
     }),
     [
       theme,
@@ -186,6 +270,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setShortcutsEnabled,
       keybinds,
       setKeybinds,
+      appearancePresets,
+      saveAppearancePreset,
+      applyAppearancePreset,
+      clearAppearancePreset,
     ]
   );
 
