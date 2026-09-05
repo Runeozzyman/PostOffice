@@ -8,9 +8,9 @@ Rather than relying entirely on folders, labels, and search, users can create Ma
 
 PostOffice is being developed with a focus on three core ideas:
 
-Customization — Users can define how their email is organized rather than relying on a fixed structure, and have the ability to customize their PostOffice's appearance.
-Local-first performance — Emails are stored locally so previously retrieved messages can be accessed without repeatedly making expensive API requests. This also means any sensitive information is not exposed.
-Desktop experience — A dedicated application provides a more controlled, convenient, and customizable environment than a traditional web-based mail client.
+- Customization: Users can define how their email is organized rather than relying on a fixed structure, and have the ability to customize their PostOffice's appearance.
+- Local-first performance: Emails are stored locally so previously retrieved messages can be accessed without repeatedly making expensive API requests. This also means any sensitive information is not exposed.
+- Desktop experience: A dedicated application provides a more controlled, convenient, and customizable environment than a traditional web-based mail client.
 
 # How It Works
 
@@ -19,10 +19,10 @@ SQLite database. Subsequent interactions can then query from the local database 
 
 This approach provides several benefits:
 
-Faster retrieval of previously synchronized messages
-Reduced reliance on repeated Gmail API requests
-Local querying and filtering of large mailboxes
-A foundation for more advanced organization and search features
+- Faster retrieval of previously synchronized messages
+- Reduced reliance on repeated Gmail API requests
+- Local querying and filtering of large mailboxes
+- A foundation for more advanced organization and search features
 
 New emails are fetched from the associated inbox every 20s, or upon a manual refresh by the user. For performance and low latency fetching, the associated inbox is only searched beginning from the index of the most
 recently stored email, to avoid searching through potentially thousands of already stored emails.
