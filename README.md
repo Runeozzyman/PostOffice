@@ -1,13 +1,31 @@
-# What is PostOffice
+# What is PostOffice?
 
-PostOffice is a desktop mail client made with Electron that lets users filter email into custom mailboxes called **mailslots**. It was developed with an AI-assisted workflow in Cursor.
+PostOffice is a desktop mail client built with Electron that gives users a more customizable way to organize their email through user-defined mailboxes called Mailslots.
 
-PostOffice was developed with the intention of giving users a more customizable interface to receive, organize, and send mail, all bundled into a convenient desktop app.
-Leveraging my experience in TypeScript, JavaScript, and React, I chose to use Electron for this project so I would be able to create a desktop application using my web development skills.
+The goal of PostOffice is not to replace Gmail or reinvent the traditional email client. Instead, it focuses on providing a flexible interface for organizing email around the way individual users actually work.
 
-PostOffice uses Google's OAuth 2.0 to sign-in and receive permissions to access the users Gmail account, and performs a full-sync; Storing all user emails in a local SQLite database for fast retrieval and to ignore repeating large and expensive batch requests.
+Rather than relying entirely on folders, labels, and search, users can create Mailslots with their own filtering rules and have incoming messages automatically organized into the appropriate slots.
 
-PostOffice is still under development, and will be released using Electron builder and maintained with Electron updater.
+PostOffice is being developed with a focus on three core ideas:
+
+Customization — Users can define how their email is organized rather than relying on a fixed structure, and have the ability to customize their PostOffice's appearance.
+Local-first performance — Emails are stored locally so previously retrieved messages can be accessed without repeatedly making expensive API requests. This also means any sensitive information is not exposed.
+Desktop experience — A dedicated application provides a more controlled, convenient, and customizable environment than a traditional web-based mail client.
+
+#How It Works
+
+PostOffice uses the official Gmail API and services to connect with your personal Gmail account. Upon successful connection, PostOffice begins incrementally fetching emails in batches, and storing them in a local
+SQLite database. Subsequent interactions can then query from the local database rather than making repeated API requests from the Gmail API.
+
+This approach provides several benefits:
+
+Faster retrieval of previously synchronized messages
+Reduced reliance on repeated Gmail API requests
+Local querying and filtering of large mailboxes
+A foundation for more advanced organization and search features
+
+New emails are fetched from the associated inbox every 20s, or upon a manual refresh by the user. For performance and low latency fetching, the associated inbox is only searched beginning from the index of the most
+recently stored email, to avoid searching through potentially thousands of already stored emails.
 
 ## Screenshots
 
