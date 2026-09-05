@@ -9,7 +9,7 @@ x (A) 2026-08-26 2026-08-26 Add drafts folder for unfinished emails
 x (B) 2026-08-26 2026-08-26 Allow for changing of font and font size
 x (B) 2026-08-26 2026-08-25 Add support for sending attachments
 x (B) 2026-08-26 2026-08-26 Reduce performance hit of debounded address recommendations
-x (C) 2026-08-26 2026-08-15 Make mailslot cards re-organizable by dragging
+x (C) 2026-08-26 2026-08-15 Make mailslot cards re-organizable by dragging (REMOVED)
 x (B) 2026-08-26 2026-08-15 Allow users to trash mail
 x (A) 2026-08-26 2026-08-15 Allow users to send mail
 x (B) 2026-08-25 2026-08-15 Allow user to create 'mailslots'

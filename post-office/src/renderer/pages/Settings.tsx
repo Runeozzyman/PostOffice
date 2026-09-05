@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import SettingsGroup from "../components/SettingsGroup";
 import SettingsToggle from "../components/SettingsToggle";
 import SignOutButton from "../components/SignOutButton";
@@ -20,6 +21,23 @@ export default function Settings() {
     fontSize,
     setFontSize,
   } = usePreferences();
+  const [sliderSize, setSliderSize] = useState(fontSize);
+  const [inputSize, setInputSize] = useState(String(fontSize));
+
+  useEffect(() => {
+    setSliderSize(fontSize);
+    setInputSize(String(fontSize));
+  }, [fontSize]);
+
+  const commitFontSize = (value: number) => {
+    if (!Number.isFinite(value)) {
+      setSliderSize(fontSize);
+      setInputSize(String(fontSize));
+      return;
+    }
+
+    setFontSize(value);
+  };
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
@@ -102,14 +120,36 @@ export default function Settings() {
                   min={FONT_SIZE_MIN}
                   max={FONT_SIZE_MAX}
                   step={1}
-                  value={fontSize}
+                  value={sliderSize}
                   aria-label="Text size"
-                  onChange={(event) => setFontSize(Number(event.target.value))}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    setSliderSize(value);
+                    setInputSize(String(value));
+                  }}
+                  onPointerUp={(event) =>
+                    commitFontSize(Number(event.currentTarget.value))
+                  }
+                  onKeyUp={(event) =>
+                    commitFontSize(Number(event.currentTarget.value))
+                  }
                   className="w-36 accent-accent"
                 />
-                <span className="w-10 text-right text-sm tabular-nums text-ink-secondary">
-                  {fontSize}
-                </span>
+                <input
+                  type="number"
+                  min={FONT_SIZE_MIN}
+                  max={FONT_SIZE_MAX}
+                  value={inputSize}
+                  onChange={(event) => setInputSize(event.target.value)}
+                  onBlur={() => commitFontSize(Number(inputSize))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  className="w-14 text-right text-sm tabular-nums text-ink-secondary border border-line rounded px-1 py-0.5"
+                  aria-label="Font size"
+                /> 
               </div>
             </div>
             <div className="px-4 py-3">
