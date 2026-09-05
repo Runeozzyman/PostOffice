@@ -171,6 +171,7 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
     }
 
     db.exec("COMMIT");
+    invalidateMailslotFilterCache();
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;
@@ -272,6 +273,72 @@ function winningMailslotId(emailTable: string) {
   `;
 }
 
+const mailslotEmailIdCache = new Map<string, string[]>();
+
+export function invalidateMailslotFilterCache() {
+  mailslotEmailIdCache.clear();
+}
+
+function cachedMailslotEmailIds(slotId: string): string[] {
+  const cached = mailslotEmailIdCache.get(slotId);
+
+  if (cached) {
+    return cached;
+  }
+
+  const rows = asRows<{ id: string }>(
+    getDb()
+      .prepare(
+        `
+        SELECT emails.id
+        FROM emails
+        WHERE ${mailboxFilter("inbox")}
+          AND ${winningMailslotId("emails")} = ?
+        ORDER BY emails.internal_date DESC
+        `
+      )
+      .all(slotId)
+  );
+  const ids = rows.map((row) => row.id);
+  mailslotEmailIdCache.set(slotId, ids);
+  return ids;
+}
+
+function emailsByOrderedIds(ids: string[], slotId: string): Email[] {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const records: EmailListRecord[] = [];
+  const chunkSize = 400;
+
+  for (let index = 0; index < ids.length; index += chunkSize) {
+    const chunk = ids.slice(index, index + chunkSize);
+    const placeholders = chunk.map(() => "?").join(", ");
+    const rows = asRows<EmailListRecord>(
+      getDb()
+        .prepare(
+          `
+          SELECT
+            ${LIST_COLUMNS},
+            (SELECT color FROM mailslots WHERE id = ?) AS mailslot_color,
+            (SELECT title FROM mailslots WHERE id = ?) AS mailslot_title
+          FROM emails
+          WHERE emails.id IN (${placeholders})
+          `
+        )
+        .all(slotId, slotId, ...chunk)
+    );
+    records.push(...rows);
+  }
+
+  const byId = new Map(records.map((row) => [row.id, row]));
+  return ids
+    .map((id) => byId.get(id))
+    .filter((row): row is EmailListRecord => Boolean(row))
+    .map(toEmail);
+}
+
 export function listInboxPage(options: {
   page: number;
   pageSize: number;
@@ -279,10 +346,29 @@ export function listInboxPage(options: {
   mailslotId?: string;
   mailbox?: "inbox" | "starred" | "sent" | "trash";
 }): EmailPage {
+  const mailbox = options.mailslotId ? "inbox" : (options.mailbox ?? "inbox");
   const pageSize = Math.max(1, options.pageSize);
   const search = options.query?.trim() ?? "";
+
+  if (options.mailslotId && !search) {
+    const ids = cachedMailslotEmailIds(options.mailslotId);
+    const total = ids.length;
+    const pageCount = Math.max(1, Math.ceil(total / pageSize) || 1);
+    const page = Math.min(Math.max(1, options.page), pageCount);
+    const offset = (page - 1) * pageSize;
+
+    return {
+      emails: emailsByOrderedIds(
+        ids.slice(offset, offset + pageSize),
+        options.mailslotId
+      ),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   const params: (string | number)[] = [];
-  const mailbox = options.mailslotId ? "inbox" : (options.mailbox ?? "inbox");
 
   let where = mailboxFilter(mailbox);
 
@@ -410,6 +496,8 @@ export function setEmailLabels(id: string, labels: string[]) {
   if (result.changes === 0) {
     throw new Error("Email was not found in the local database.");
   }
+
+  invalidateMailslotFilterCache();
 }
 
 export function getStoredAttachment(
@@ -491,6 +579,8 @@ export function applyEmailMailslotMembership(
   if (selectedSlotId) {
     assignEmailToMailslot(emailId, selectedSlotId);
   }
+
+  invalidateMailslotFilterCache();
 }
 
 export function getMailslotFiling(emailId: string): {
@@ -579,6 +669,7 @@ export function backfillSenderFields() {
       update.run(sender.email, sender.domain, row.id);
     }
     db.exec("COMMIT");
+    invalidateMailslotFilterCache();
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;

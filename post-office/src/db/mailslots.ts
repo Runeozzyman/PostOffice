@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Mailslot, MailslotIcon } from "../types/mailslot";
 import { MAX_MAILSLOTS } from "../types/mailslot";
 import { getDb } from "./database";
+import { invalidateMailslotFilterCache } from "./emails";
 
 interface MailslotRecord {
   id: string;
@@ -124,6 +125,7 @@ export function createMailslot(input: {
     mailslot.sortOrder
   );
 
+  invalidateMailslotFilterCache();
   return mailslot;
 }
 
@@ -176,6 +178,7 @@ export function deleteMailslot(id: string) {
   }
 
   getDb().prepare(`DELETE FROM mailslots WHERE id = ?`).run(id);
+  invalidateMailslotFilterCache();
 }
 
 export function addMailslotRule(input: {
@@ -201,6 +204,7 @@ export function addMailslotRule(input: {
     `
     )
     .run(randomUUID(), input.mailslotId, input.matchType, pattern);
+  invalidateMailslotFilterCache();
 }
 
 export function removeMailslotRule(input: {
@@ -216,6 +220,7 @@ export function removeMailslotRule(input: {
     `
     )
     .run(input.mailslotId, input.matchType, input.pattern.trim().toLowerCase());
+  invalidateMailslotFilterCache();
 }
 
 export function applyMailslotRules(input: {
@@ -241,4 +246,6 @@ export function applyMailslotRules(input: {
       pattern,
     });
   }
+
+  invalidateMailslotFilterCache();
 }

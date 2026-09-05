@@ -16,6 +16,11 @@ import {
   withTrashed,
 } from "../../helpers/emailLabels";
 import { isTypingTarget } from "../helpers/keyboard";
+import {
+  readMailslotListCache,
+  writeMailslotListCache,
+  invalidateMailslotListCache,
+} from "../helpers/mailslotListCache";
 import EmailRow from "./EmailRow";
 import EmailDetail from "./EmailDetail";
 
@@ -40,14 +45,18 @@ export default function EmailListPanel({
   keyboardActive = false,
   canDragToMailslot = false,
 }: EmailListPanelProps) {
-  const [emails, setEmails] = useState<Email[]>([]);
+  const initialCached =
+    mailslotId
+      ? readMailslotListCache(mailslotId, 1, PAGE_SIZE, "")
+      : undefined;
+  const [emails, setEmails] = useState<Email[]>(initialCached?.emails ?? []);
   const [mailslots, setMailslots] = useState<Mailslot[]>([]);
-  const [total, setTotal] = useState(0);
+  const [total, setTotal] = useState(initialCached?.total ?? 0);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialCached);
   const [selected, setSelected] = useState<EmailDetailType | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -68,7 +77,19 @@ export default function EmailListPanel({
     setFocusedIndex(-1);
   }, [query, mailslotId, mailbox]);
 
-  const loadPage = async () => {
+  const loadPage = async (options?: { force?: boolean }) => {
+    if (mailslotId && !options?.force) {
+      const cached = readMailslotListCache(mailslotId, page, PAGE_SIZE, query);
+      if (cached) {
+        setEmails(cached.emails);
+        setTotal(cached.total);
+        setPage(cached.page);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+    }
+
     const result = await window.electronAPI.listEmails({
       page,
       pageSize: PAGE_SIZE,
@@ -82,6 +103,10 @@ export default function EmailListPanel({
     setPage(result.page);
     setLoading(false);
     setError(null);
+
+    if (mailslotId) {
+      writeMailslotListCache(mailslotId, result, query);
+    }
   };
 
   useEffect(() => {
@@ -111,10 +136,10 @@ export default function EmailListPanel({
     let cancelled = false;
     let reloadTimer: number | undefined;
 
-    const load = async () => {
+    const load = async (options?: { force?: boolean }) => {
       try {
         if (!cancelled) {
-          await loadPage();
+          await loadPage(options);
         }
       } catch (err) {
         if (!cancelled) {
@@ -129,23 +154,24 @@ export default function EmailListPanel({
     void load();
 
     const unsubscribeStored = window.electronAPI.onEmailStored(() => {
+      invalidateMailslotListCache();
       window.clearTimeout(reloadTimer);
       reloadTimer = window.setTimeout(() => {
         if (!cancelled) {
-          void loadPage().catch(() => undefined);
+          void loadPage({ force: true }).catch(() => undefined);
         }
       }, 250);
     });
 
     const onMailslotsChanged = () => {
       if (!cancelled) {
-        void load();
+        void load({ force: true });
       }
     };
 
     const onEmailsChanged = () => {
       if (!cancelled) {
-        void loadPage().catch(() => undefined);
+        void loadPage({ force: true }).catch(() => undefined);
       }
     };
 
@@ -335,6 +361,23 @@ export default function EmailListPanel({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [keyboardActive, emails, selected, focusedIndex]);
 
+  useEffect(() => {
+    if (!mailslotId || loading) {
+      return;
+    }
+
+    writeMailslotListCache(
+      mailslotId,
+      {
+        emails,
+        total,
+        page,
+        pageSize: PAGE_SIZE,
+      },
+      query
+    );
+  }, [mailslotId, emails, total, page, query, loading]);
+
   const goToPage = (nextPage: number) => {
     setPage(Math.min(pageCount, Math.max(1, nextPage)));
   };
@@ -370,6 +413,7 @@ export default function EmailListPanel({
 
   const queueTrashAction = (email: Email) => {
     const restore = mailbox === "trash";
+    invalidateMailslotListCache();
     notifyEmailMutated({
       ...email,
       labels: restore ? withRestored(email.labels) : withTrashed(email.labels),
