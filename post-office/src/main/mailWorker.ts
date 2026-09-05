@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { configureGmailSession, getAuthenticatedClient, setGmailRefreshToken } from "../auth/gmailSession";
+import { configureGmailSession, getAuthenticatedClient, rethrowIfGmailAuthFailed, setGmailRefreshToken } from "../auth/gmailSession";
 import { initDatabase } from "../db/database";
 import { setUserDataPath } from "../db/paths";
 import {
@@ -271,21 +271,25 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
           throw new Error("User is not authenticated.");
         }
 
-        const gmail = google.gmail({ version: "v1", auth });
-        const response = await gmail.users.messages.attachments.get({
-          userId: "me",
-          messageId: input.messageId,
-          id: input.attachmentId,
-        });
+        try {
+          const gmail = google.gmail({ version: "v1", auth });
+          const response = await gmail.users.messages.attachments.get({
+            userId: "me",
+            messageId: input.messageId,
+            id: input.attachmentId,
+          });
 
-        if (!response.data.data) {
-          throw new Error("Gmail did not return attachment data.");
+          if (!response.data.data) {
+            throw new Error("Gmail did not return attachment data.");
+          }
+
+          bytes = Buffer.from(
+            response.data.data.replace(/-/g, "+").replace(/_/g, "/"),
+            "base64"
+          );
+        } catch (error) {
+          rethrowIfGmailAuthFailed(error);
         }
-
-        bytes = Buffer.from(
-          response.data.data.replace(/-/g, "+").replace(/_/g, "/"),
-          "base64"
-        );
       }
 
       return {

@@ -38,3 +38,22 @@ export async function getAuthenticatedClient() {
   cachedRefreshToken = refreshToken;
   return oauth2Client;
 }
+
+export function rethrowIfGmailAuthFailed(error: unknown): never {
+  const text = [
+    error instanceof Error ? error.message : String(error),
+    typeof error === "object" && error && "response" in error
+      ? JSON.stringify(
+          (error as { response?: { data?: unknown } }).response?.data ?? ""
+        )
+      : "",
+  ].join(" ");
+
+  if (text.includes("invalid_grant") || text.includes("invalid_client")) {
+    throw new Error(
+      "Google sign-in expired. Sign out and sign in again to load attachments."
+    );
+  }
+
+  throw error instanceof Error ? error : new Error(String(error));
+}
