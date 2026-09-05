@@ -282,6 +282,14 @@ export default function EmailListPanel({
         return;
       }
 
+      if (event.key === "b" || event.key === "B") {
+        if (selected) {
+          event.preventDefault();
+          setSelected(null);
+        }
+        return;
+      }
+
       if (emails.length === 0) {
         return;
       }
