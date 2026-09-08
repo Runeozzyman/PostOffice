@@ -65,5 +65,5 @@ recently stored email, to avoid searching through potentially thousands of alrea
 ## Tech Used
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=ts,react,electron,sqlite,nodejs,tailwind,gmail" alt="TypeScript, React, Electron, SQLite, Node.js, Tailwind CSS, and Gmail" />
+  <img src="https://skillicons.dev/icons?i=ts,react,electron,sqlite,nodejs,tailwind,gmail" alt="TypeScript, React, Electron, SQLite, Tailwind CSS, and Gmail" />
 </p>
