@@ -10,9 +10,16 @@ import type { Email } from "../types/email";
 import { batchGetMessages } from "./gmailBatch";
 import { getMeta, setMeta } from "../db/meta";
 import { parseGmailMessage } from "./gmailPayload";
+import {
+  consumeGmailQuota,
+  gmailListCost,
+  gmailMessageGetCost,
+  isGmailQuotaError,
+  withGmailRetry,
+} from "../helpers/gmailQuota";
 
-const LIST_PAGE_SIZE = 500;
-const WRITE_BATCH_SIZE = 20;
+const LIST_PAGE_SIZE = 100;
+const WRITE_BATCH_SIZE = 8;
 const GMAIL_HISTORY_ID_KEY = "gmail_history_id";
 
 export interface SyncProgress {
@@ -81,8 +88,11 @@ async function rememberHistoryId(
     historyId != null && String(historyId)
       ? String(historyId)
       : (
-          await gmail.users.getProfile({
-            userId: "me",
+          await withGmailRetry(async () => {
+            await consumeGmailQuota(gmailListCost());
+            return gmail.users.getProfile({
+              userId: "me",
+            });
           })
         ).data.historyId;
 
@@ -111,6 +121,10 @@ async function getMessagesInOrder(auth: OAuth2Client, ids: string[]) {
         Boolean(message)
       );
   } catch (error) {
+    if (isGmailQuotaError(error)) {
+      throw error;
+    }
+
     console.warn(
       "Gmail batch fetch failed, falling back to individual gets.",
       error
@@ -119,10 +133,13 @@ async function getMessagesInOrder(auth: OAuth2Client, ids: string[]) {
     const messages = [];
 
     for (const id of ids) {
-      const response = await gmail.users.messages.get({
-        userId: "me",
-        id,
-        format: "full",
+      const response = await withGmailRetry(async () => {
+        await consumeGmailQuota(gmailMessageGetCost(1));
+        return gmail.users.messages.get({
+          userId: "me",
+          id,
+          format: "full",
+        });
       });
 
       if (response.data.id) {
@@ -183,10 +200,13 @@ export async function syncInboxEmails(
   console.log("Starting mailbox sync from newest messages.");
 
   do {
-    const response = await gmail.users.messages.list({
-      userId: "me",
-      maxResults: LIST_PAGE_SIZE,
-      pageToken,
+    const response = await withGmailRetry(async () => {
+      await consumeGmailQuota(gmailListCost());
+      return gmail.users.messages.list({
+        userId: "me",
+        maxResults: LIST_PAGE_SIZE,
+        pageToken,
+      });
     });
 
     const pageIds = (response.data.messages ?? [])
@@ -250,11 +270,14 @@ export async function syncNewInboxEmails(
     let latestHistoryId: string | number | null | undefined = startHistoryId;
 
     do {
-      const response = await gmail.users.history.list({
-        userId: "me",
-        startHistoryId,
-        pageToken,
-        historyTypes: ["messageAdded"],
+      const response = await withGmailRetry(async () => {
+        await consumeGmailQuota(gmailListCost());
+        return gmail.users.history.list({
+          userId: "me",
+          startHistoryId,
+          pageToken,
+          historyTypes: ["messageAdded"],
+        });
       });
 
       latestHistoryId = response.data.historyId ?? latestHistoryId;

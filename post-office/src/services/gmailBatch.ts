@@ -1,5 +1,11 @@
 import type { OAuth2Client } from "google-auth-library";
 import type { gmail_v1 } from "googleapis";
+import {
+  consumeGmailQuota,
+  gmailMessageGetCost,
+  isGmailQuotaError,
+  withGmailRetry,
+} from "../helpers/gmailQuota";
 
 const BATCH_ENDPOINT = "https://www.googleapis.com/batch/gmail/v1";
 
@@ -31,6 +37,21 @@ function parseBatchResponse(raw: string, boundary: string): unknown[] {
   });
 }
 
+function batchPartQuotaMessage(value: unknown): string | null {
+  if (!value || typeof value !== "object" || !("error" in value)) {
+    return null;
+  }
+
+  const payload = (value as { error?: { message?: string; code?: number } })
+    .error;
+  const message = payload?.message ?? JSON.stringify(payload ?? value);
+  if (isGmailQuotaError({ message, code: payload?.code })) {
+    return message;
+  }
+
+  return null;
+}
+
 function isGmailMessage(value: unknown): value is gmail_v1.Schema$Message {
   return (
     typeof value === "object" &&
@@ -48,53 +69,65 @@ export async function batchGetMessages(
     return [];
   }
 
-  const boundary = `batch_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  await consumeGmailQuota(gmailMessageGetCost(ids.length));
 
-  const body =
-    ids
-      .map((id, index) => {
-        const path = `/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`;
+  return withGmailRetry(async () => {
+    const boundary = `batch_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-        return [
-          `--${boundary}`,
-          "Content-Type: application/http",
-          `Content-ID: <item${index}>`,
-          "",
-          `GET ${path}`,
-          "",
-        ].join("\r\n");
-      })
-      .join("\r\n") + `\r\n--${boundary}--\r\n`;
+    const body =
+      ids
+        .map((id, index) => {
+          const path = `/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`;
 
-  const response = await auth.request({
-    url: BATCH_ENDPOINT,
-    method: "POST",
-    headers: {
-      "Content-Type": `multipart/mixed; boundary="${boundary}"`,
-    },
-    data: body,
-    responseType: "text",
+          return [
+            `--${boundary}`,
+            "Content-Type: application/http",
+            `Content-ID: <item${index}>`,
+            "",
+            `GET ${path}`,
+            "",
+          ].join("\r\n");
+        })
+        .join("\r\n") + `\r\n--${boundary}--\r\n`;
+
+    const response = await auth.request({
+      url: BATCH_ENDPOINT,
+      method: "POST",
+      headers: {
+        "Content-Type": `multipart/mixed; boundary="${boundary}"`,
+      },
+      data: body,
+      responseType: "text",
+    });
+
+    const headerMap = response.headers as unknown as {
+      get?: (name: string) => string | undefined;
+      [key: string]: unknown;
+    };
+    const contentType =
+      headerMap.get?.("content-type") ??
+      headerMap["content-type"] ??
+      headerMap["Content-Type"];
+    const responseBoundary =
+      extractBoundary(
+        typeof contentType === "string" ? contentType : String(contentType ?? "")
+      ) ?? boundary;
+
+    const parsed = parseBatchResponse(String(response.data), responseBoundary);
+
+    for (const part of parsed) {
+      const quotaMessage = batchPartQuotaMessage(part);
+      if (quotaMessage) {
+        throw new Error(quotaMessage);
+      }
+    }
+
+    const messages = parsed.filter(isGmailMessage);
+
+    if (messages.length === 0) {
+      throw new Error("Gmail batch request returned no messages.");
+    }
+
+    return messages;
   });
-
-  const headerMap = response.headers as unknown as {
-    get?: (name: string) => string | undefined;
-    [key: string]: unknown;
-  };
-  const contentType =
-    headerMap.get?.("content-type") ??
-    headerMap["content-type"] ??
-    headerMap["Content-Type"];
-  const responseBoundary =
-    extractBoundary(
-      typeof contentType === "string" ? contentType : String(contentType ?? "")
-    ) ?? boundary;
-
-  const parsed = parseBatchResponse(String(response.data), responseBoundary);
-  const messages = parsed.filter(isGmailMessage);
-
-  if (messages.length === 0) {
-    throw new Error("Gmail batch request returned no messages.");
-  }
-
-  return messages;
 }
