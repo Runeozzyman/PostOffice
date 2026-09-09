@@ -1,6 +1,6 @@
 (A) 2026-08-26 Allow for compilation of multiple emails
 (B) 2026-09-09 Add bold, italic, underline in compose window
-
+(B) 2026-09-09 Add further customziation to mailslot page
 ------------------------------------------------------------------------------------------------------
 x (B) 2026-08-26 2026-08-26 Add image rendering in email
 x (C) 2026-08-26 2026-08-26 Create selectable themes
