@@ -1,4 +1,5 @@
 import { utilityProcess, type UtilityProcess } from "electron";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
@@ -25,7 +26,33 @@ const listeners = new Set<(event: MailEvent) => void>();
 let ready: Promise<void> | null = null;
 
 function workerPath() {
-  return path.join(__dirname, "mailWorker.js");
+  const names = ["mailWorker.mjs", "mailWorker.js", "mailWorker.cjs"];
+
+  for (const name of names) {
+    const packed = path.join(__dirname, name);
+    const unpacked = packed.replace(
+      `${path.sep}app.asar${path.sep}`,
+      `${path.sep}app.asar.unpacked${path.sep}`
+    );
+
+    if (unpacked !== packed && fs.existsSync(unpacked)) {
+      return unpacked;
+    }
+
+    if (fs.existsSync(packed)) {
+      return packed;
+    }
+  }
+
+  return path.join(__dirname, "mailWorker.mjs");
+}
+
+function appendWorkerLog(userDataPath: string, chunk: string | Uint8Array) {
+  try {
+    fs.appendFileSync(path.join(userDataPath, "mail-worker.log"), chunk);
+  } catch {
+    // Ignore log write failures.
+  }
 }
 
 function post(message: MailToWorker) {
@@ -56,10 +83,34 @@ export async function startMailRuntime(init: MailWorkerInit) {
   }
 
   ready = new Promise<void>((resolve, reject) => {
+    let settled = false;
+
+    const finish = (error?: Error) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      if (error) {
+        ready = null;
+        reject(error);
+        return;
+      }
+
+      resolve();
+    };
+
     try {
       child = utilityProcess.fork(workerPath(), [], {
         serviceName: "PostOffice Mail",
-        stdio: "inherit",
+        stdio: "pipe",
+      });
+      child.stdout?.on("data", (chunk: string | Uint8Array) => {
+        appendWorkerLog(init.userDataPath, chunk);
+      });
+      child.stderr?.on("data", (chunk: string | Uint8Array) => {
+        appendWorkerLog(init.userDataPath, chunk);
       });
     } catch (error) {
       ready = null;
@@ -71,12 +122,12 @@ export async function startMailRuntime(init: MailWorkerInit) {
       const message = data as MailFromWorker;
 
       if (message?.kind === "ready") {
-        resolve();
+        finish();
         return;
       }
 
       if (message?.kind === "fatal") {
-        reject(new Error(message.error));
+        finish(new Error(message.error));
         return;
       }
 
@@ -103,8 +154,18 @@ export async function startMailRuntime(init: MailWorkerInit) {
 
     child.on("exit", (code) => {
       child = null;
-      ready = null;
       rejectAll(new Error(`Mail worker exited (${code ?? "unknown"}).`));
+
+      if (!settled) {
+        finish(
+          new Error(
+            `Mail worker exited before it was ready (${code ?? "unknown"}).`
+          )
+        );
+        return;
+      }
+
+      ready = null;
     });
 
     child.on("spawn", () => {

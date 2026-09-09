@@ -341,7 +341,8 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
 
 const port = parentPort();
 
-port.on("message", (event) => {
+try {
+  port.on("message", (event) => {
   const message = event.data as MailToWorker;
 
   if (message?.kind === "init") {
@@ -385,3 +386,7 @@ port.on("message", (event) => {
       });
     });
 });
+} catch (error) {
+  console.error(error);
+  throw error;
+}

@@ -6,3 +6,4 @@ credentials.json
 dist/
 dist-electron/
 **/dist-electron/
+release/

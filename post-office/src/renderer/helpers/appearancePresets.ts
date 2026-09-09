@@ -28,7 +28,12 @@ function parseSnapshot(value: unknown): AppearanceSnapshot | null {
   }
 
   const raw = value as Partial<AppearanceSnapshot>;
-  if (!isThemeId(raw.theme ?? null) || !isAppFontId(raw.font ?? null)) {
+  const theme = raw.theme;
+  const font = raw.font;
+  if (typeof theme !== "string" || !isThemeId(theme)) {
+    return null;
+  }
+  if (typeof font !== "string" || !isAppFontId(font)) {
     return null;
   }
 
@@ -36,9 +41,9 @@ function parseSnapshot(value: unknown): AppearanceSnapshot | null {
     typeof raw.themeColor === "string" && raw.themeColor ? raw.themeColor : "";
 
   return {
-    theme: raw.theme,
+    theme,
     themeColor,
-    font: raw.font,
+    font,
     fontSize: clampFontSize(
       typeof raw.fontSize === "number" ? raw.fontSize : FONT_SIZE_DEFAULT
     ),

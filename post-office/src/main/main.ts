@@ -67,17 +67,36 @@ function openExternalIfSafe(url: string) {
   return false;
 }
 
-const createWindow = () => {
+function preloadScriptPath() {
+  for (const name of ["preload.mjs", "preload.js"]) {
+    const full = path.join(__dirname, name);
+    if (fs.existsSync(full)) {
+      return full;
+    }
+  }
+
+  return path.join(__dirname, "preload.mjs");
+}
+
+function windowIconPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, "icon.png");
+  }
+
+  return path.join(__dirname, "../src/assets/icon.png");
+}
+
+function createWindow() {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 500,
-    icon: path.join(__dirname, "../src/assets/icon.png"),
+    icon: windowIconPath(),
     title: "PostOffice",
 
     webPreferences: {
-      preload: path.join(__dirname, "preload.mjs"),
+      preload: preloadScriptPath(),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -97,8 +116,12 @@ const createWindow = () => {
     openExternalIfSafe(url);
   });
 
-  window.loadURL("http://localhost:5173");
-};
+  if (app.isPackaged) {
+    void window.loadFile(path.join(__dirname, "../dist/index.html"));
+  } else {
+    void window.loadURL("http://localhost:5173");
+  }
+}
 
 function broadcast(channel: string, payload: unknown) {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -356,11 +379,34 @@ ipcMain.handle("google-sign-in", async () => {
 });
 
 app.whenReady().then(async () => {
-  await startMailRuntime({
-    userDataPath: app.getPath("userData"),
-    refreshToken: loadRefreshToken(),
-  });
   createWindow();
+
+  try {
+    await startMailRuntime({
+      userDataPath: app.getPath("userData"),
+      refreshToken: loadRefreshToken(),
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+    console.error("Mail worker failed to start.", error);
+    dialog.showErrorBox(
+      "PostOffice could not start mail services",
+      message
+    );
+  }
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
+
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
 
 app.on("before-quit", () => {

@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import electron from "vite-plugin-electron/simple";
+import electron from "vite-plugin-electron";
+import electronSimple from "vite-plugin-electron/simple";
 import tailwindcss from "@tailwindcss/vite";
 
 function googleOAuthDefine(mode: string) {
@@ -34,21 +35,50 @@ export default defineConfig(({ mode }) => {
   const oauthDefine = googleOAuthDefine(mode);
 
   return {
+    base: "./",
     plugins: [
       react(),
       tailwindcss(),
-      electron({
+      electronSimple({
         main: {
-          entry: {
-            main: "src/main/main.ts",
-            mailWorker: "src/main/mailWorker.ts",
-          },
+          entry: "src/main/main.ts",
           vite: {
             define: oauthDefine,
           },
         },
         preload: {
           input: "src/preload/preload.ts",
+        },
+      }),
+      electron({
+        entry: "src/main/mailWorker.ts",
+        onstart() {
+          // Main process startup is owned by electronSimple.
+        },
+        vite: {
+          define: oauthDefine,
+          build: {
+            outDir: "dist-electron",
+            emptyOutDir: false,
+            rollupOptions: {
+              output: {
+                format: "es",
+                codeSplitting: false,
+                entryFileNames: "mailWorker.mjs",
+              },
+            },
+          },
+          plugins: [
+            {
+              name: "mail-worker-package-json",
+              closeBundle() {
+                fs.writeFileSync(
+                  path.join(process.cwd(), "dist-electron", "package.json"),
+                  JSON.stringify({ type: "module" })
+                );
+              },
+            },
+          ],
         },
       }),
     ],
