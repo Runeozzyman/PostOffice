@@ -1,5 +1,5 @@
 (A) 2026-08-26 Allow for compilation of multiple emails
-
+(B) 2026-09-09 Add bold, italic, underline in compose window
 
 ------------------------------------------------------------------------------------------------------
 x (B) 2026-08-26 2026-08-26 Add image rendering in email
