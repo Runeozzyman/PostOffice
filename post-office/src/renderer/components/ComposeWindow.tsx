@@ -1,15 +1,24 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import {
+  FiBold,
+  FiItalic,
   FiMaximize2,
   FiMinimize2,
   FiMinus,
   FiPaperclip,
+  FiUnderline,
   FiX,
 } from "react-icons/fi";
 import { useCompose } from "../context/ComposeContext";
 import { notifyDraftsChanged } from "../helpers/draftEvents";
 import { notifyEmailsChanged } from "../helpers/emailEvents";
 import { GMAIL_MAX_ATTACHMENT_BYTES } from "../../helpers/gmailLimits";
+import {
+  escapeHtml,
+  htmlToPlain,
+  isComposeBodyEmpty,
+  plainToEditorHtml,
+} from "../../helpers/composeHtml";
 import type { ComposeAttachment, GmailSignature } from "../../types/compose";
 import { splitQuotedBody } from "../../helpers/splitQuotedBody";
 import AddressField from "./AddressField";
@@ -59,6 +68,12 @@ export default function ComposeWindow() {
   const [error, setError] = useState<string | null>(null);
   const [signatures, setSignatures] = useState<GmailSignature[]>([]);
   const [signatureId, setSignatureId] = useState("");
+  const [formats, setFormats] = useState({
+    bold: false,
+    italic: false,
+    underline: false,
+  });
+  const editorRef = useRef<HTMLDivElement>(null);
   const ignoreSavesRef = useRef(false);
   const latestRef = useRef({
     draft: emptyDraft,
@@ -88,7 +103,7 @@ export default function ComposeWindow() {
         !current.draft.cc.trim() &&
         !current.draft.bcc.trim() &&
         !current.draft.subject.trim() &&
-        !current.draft.body.trim() &&
+        isComposeBodyEmpty(current.draft.body) &&
         current.attachments.length === 0;
 
       if (empty && !current.draftId) {
@@ -166,7 +181,7 @@ export default function ComposeWindow() {
       cc: seed?.cc ?? "",
       bcc: seed?.bcc ?? "",
       subject: seed?.subject ?? "",
-      body: seed?.body ?? "",
+      body: plainToEditorHtml(seed?.body ?? ""),
     });
     setAttachments(seed?.attachments ?? []);
     setThreadId(seed?.threadId);
@@ -192,6 +207,31 @@ export default function ComposeWindow() {
         setSignatureId("");
       });
   }, [sessionId, seed]);
+
+  useEffect(() => {
+    if (mode === "closed" || sessionId === 0) {
+      return;
+    }
+
+    const editor = editorRef.current;
+
+    if (editor) {
+      editor.innerHTML = plainToEditorHtml(seed?.body ?? "");
+    }
+  }, [mode, sessionId, seed]);
+
+  useEffect(() => {
+    const syncFormats = () => {
+      setFormats({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        underline: document.queryCommandState("underline"),
+      });
+    };
+
+    document.addEventListener("selectionchange", syncFormats);
+    return () => document.removeEventListener("selectionchange", syncFormats);
+  }, []);
 
   useEffect(() => {
     if (mode === "closed" || sessionId === 0) {
@@ -229,13 +269,41 @@ export default function ComposeWindow() {
     }
 
     const { before, after } = splitQuotedBody(draft.body);
+    const signatureHtml = escapeHtml(selectedSignature.text).replaceAll(
+      "\n",
+      "<br>"
+    );
+    const next = [before, signatureHtml, after]
+      .map((part) => part.trim())
+      .filter((part) => htmlToPlain(part).length > 0)
+      .join("<br><br>");
+
     setDraft((current) => ({
       ...current,
-      body: [before.trimEnd(), selectedSignature.text, after.trimStart()]
-        .filter(Boolean)
-        .join("\n\n"),
+      body: next,
     }));
+    if (editorRef.current) {
+      editorRef.current.innerHTML = next;
+    }
     setSignatureId("");
+  };
+
+  const syncEditorBody = () => {
+    const html = editorRef.current?.innerHTML ?? "";
+    setDraft((current) =>
+      current.body === html ? current : { ...current, body: html }
+    );
+    setFormats({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+    });
+  };
+
+  const applyFormat = (command: "bold" | "italic" | "underline") => {
+    editorRef.current?.focus();
+    document.execCommand(command, false);
+    syncEditorBody();
   };
 
   const requestClose = () => {
@@ -444,13 +512,20 @@ export default function ComposeWindow() {
           placeholder="Subject"
         />
       </label>
-      <textarea
-        value={draft.body}
-        onChange={(event) =>
-          setDraft((current) => ({ ...current, body: event.target.value }))
-        }
-        className="min-h-0 flex-1 resize-none bg-transparent px-3 py-3 text-sm text-ink outline-none"
-        placeholder="Write your message…"
+      <div
+        ref={editorRef}
+        role="textbox"
+        aria-label="Message body"
+        contentEditable
+        data-placeholder="Write your message…"
+        suppressContentEditableWarning
+        onInput={syncEditorBody}
+        onPaste={(event) => {
+          event.preventDefault();
+          const text = event.clipboardData.getData("text/plain");
+          document.execCommand("insertText", false, text);
+        }}
+        className="compose-body min-h-0 flex-1 overflow-auto bg-transparent px-3 py-3 text-sm text-ink outline-none"
       />
       {selectedSignature && (
         <div className="shrink-0 border-t border-dashed border-line px-3 py-2">
@@ -494,6 +569,42 @@ export default function ComposeWindow() {
       )}
       <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-3 py-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label="Bold"
+            aria-pressed={formats.bold}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applyFormat("bold")}
+            className={`rounded-md p-1.5 text-sm hover:bg-hover ${
+              formats.bold ? "bg-hover text-ink" : "text-ink-secondary"
+            }`}
+          >
+            <FiBold size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Italic"
+            aria-pressed={formats.italic}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applyFormat("italic")}
+            className={`rounded-md p-1.5 text-sm hover:bg-hover ${
+              formats.italic ? "bg-hover text-ink" : "text-ink-secondary"
+            }`}
+          >
+            <FiItalic size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Underline"
+            aria-pressed={formats.underline}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applyFormat("underline")}
+            className={`rounded-md p-1.5 text-sm hover:bg-hover ${
+              formats.underline ? "bg-hover text-ink" : "text-ink-secondary"
+            }`}
+          >
+            <FiUnderline size={16} />
+          </button>
           <button
             type="button"
             aria-label="Attach files"

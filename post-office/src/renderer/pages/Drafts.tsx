@@ -3,6 +3,7 @@ import { FiPaperclip, FiTrash2 } from "react-icons/fi";
 import ComposeButton from "../components/ComposeButton";
 import { useCompose } from "../context/ComposeContext";
 import { usePreferences } from "../context/PreferencesContext";
+import { htmlToPlain } from "../../helpers/composeHtml";
 import { formatListDate } from "../../helpers/formatListDate";
 import { DRAFTS_CHANGED_EVENT, notifyDraftsChanged } from "../helpers/draftEvents";
 import { isTypingTarget } from "../helpers/keyboard";
@@ -10,7 +11,7 @@ import { matchesKeybind } from "../helpers/keybinds";
 import type { StoredDraft } from "../../types/compose";
 
 function draftSnippet(draft: StoredDraft) {
-  const line = draft.body.replace(/\s+/g, " ").trim();
+  const line = htmlToPlain(draft.body).replace(/\s+/g, " ").trim();
   return line || "No message text";
 }
 
@@ -125,7 +126,7 @@ export default function Drafts({
         draft.cc,
         draft.bcc,
         draft.subject,
-        draft.body,
+        htmlToPlain(draft.body),
         ...draft.attachments.map((item) => item.filename),
       ]
         .join(" ")

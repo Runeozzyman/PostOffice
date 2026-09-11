@@ -1,7 +1,7 @@
 export function splitQuotedBody(body: string) {
   const markers = [
-    /\n\nOn .+ wrote:\n/,
-    /\n\n---------- Forwarded message ----------\n/,
+    /(?:\n|<br\s*\/?>){2}On .+? wrote:(?:\n|<br\s*\/?>)/i,
+    /(?:\n|<br\s*\/?>){2}---------- Forwarded message ----------(?:\n|<br\s*\/?>)/i,
   ];
   let index = -1;
 

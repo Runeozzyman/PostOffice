@@ -363,3 +363,10 @@ select {
   border: 1px solid var(--line);
   box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
 }
+
+.compose-body:empty::before,
+.compose-body:has(> br:only-child)::before {
+  content: attr(data-placeholder);
+  color: var(--ink-subtle);
+  pointer-events: none;
+}

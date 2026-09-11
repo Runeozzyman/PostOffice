@@ -9,6 +9,11 @@ import { mimeFromFilename } from "../helpers/mimeFromFilename";
 import { parseGmailMessage } from "./gmailPayload";
 import { splitQuotedBody } from "../helpers/splitQuotedBody";
 import { formatSignatureHtml } from "../helpers/signatureHtml";
+import {
+  htmlToPlain,
+  looksLikeHtml,
+  sanitizeComposeHtml,
+} from "../helpers/composeHtml";
 import type { ComposeAttachment } from "../types/compose";
 
 export interface SendEmailInput {
@@ -118,6 +123,33 @@ function withSignatureParts(input: SendEmailInput) {
   const signatureText = input.signatureText?.trim() ?? "";
   const signatureHtml = input.signatureHtml?.trim() ?? "";
   const { before, after } = splitQuotedBody(input.body);
+  const htmlMode = looksLikeHtml(input.body);
+
+  if (htmlMode) {
+    const htmlSignature = signatureHtml
+      ? formatSignatureHtml(signatureHtml)
+      : signatureText
+        ? `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${textToHtml(signatureText)}</div>`
+        : "";
+    const html = [
+      sanitizeComposeHtml(before.trim()),
+      htmlSignature,
+      after.trim() ? sanitizeComposeHtml(after.trim()) : "",
+    ]
+      .filter(Boolean)
+      .join("<br><br>");
+    const plainParts = [
+      htmlToPlain(before),
+      signatureText,
+      htmlToPlain(after),
+    ].filter(Boolean);
+
+    return {
+      plain: plainParts.join("\n\n"),
+      html: `<div dir="ltr">${html}</div>`,
+    };
+  }
+
   const plainParts = [before.trimEnd(), signatureText, after.trimStart()].filter(
     Boolean
   );

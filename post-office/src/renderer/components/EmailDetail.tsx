@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers} from "react-icons/fi";
 import { IoArrowBackSharp } from "react-icons/io5";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
@@ -40,10 +40,39 @@ export default function EmailDetail({
   onStar,
 }: EmailDetailProps) {
   const { openCompose } = useCompose();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const inTrash = mailbox === "trash";
   const starred = email.labels.includes("STARRED");
+
+  const sizeIframe = () => {
+    const iframe = iframeRef.current;
+    const doc = iframe?.contentDocument;
+
+    if (!iframe || !doc?.documentElement) {
+      return;
+    }
+
+    const height = Math.max(
+      doc.documentElement.scrollHeight,
+      doc.body?.scrollHeight ?? 0
+    );
+    iframe.style.height = `${Math.max(height, 48)}px`;
+  };
+
+  const onIframeLoad = () => {
+    sizeIframe();
+    const doc = iframeRef.current?.contentDocument;
+
+    if (!doc) {
+      return;
+    }
+
+    for (const image of doc.images) {
+      image.addEventListener("load", sizeIframe);
+    }
+  };
 
   const reply = async (replyAll: boolean) => {
     const accountEmail = await window.electronAPI.getAccountEmail();
@@ -77,7 +106,7 @@ export default function EmailDetail({
 
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex min-h-16 shrink-0 items-center gap-3 border-b border-line px-4 py-2">
+      <div className="z-10 flex min-h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 py-2">
         <button
           type="button"
           onClick={onBack}
@@ -136,20 +165,23 @@ export default function EmailDetail({
           </button>
         </div>
       </div>
-      <div className="shrink-0 border-b border-line px-4 py-3">
-        <p className="text-sm text-ink-secondary">{email.from}</p>
-        <p className="text-sm text-ink-muted">To: {email.to || "—"}</p>
-        <p className="text-xs text-ink-muted">{formatListDate(email.date)}</p>
-        {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
-      </div>
+      <div className="min-h-0 min-w-0 flex-1 overflow-auto">
+        <div className="border-b border-line px-4 py-3">
+          <p className="text-sm text-ink-secondary">{email.from}</p>
+          <p className="text-sm text-ink-muted">To: {email.to || "—"}</p>
+          <p className="text-xs text-ink-muted">{formatListDate(email.date)}</p>
+          {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
+        </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-auto p-4">
+        <div className="p-4">
         {email.bodyHtml ? (
           <iframe
+            ref={iframeRef}
             title="Email content"
-            sandbox="allow-popups allow-popups-to-escape-sandbox"
+            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
             srcDoc={htmlWithOpenableLinks(email.bodyHtml)}
-            className="h-full min-h-[24rem] w-full border-0 bg-white"
+            onLoad={onIframeLoad}
+            className="w-full border-0 bg-white"
           />
         ) : (
           <pre className="whitespace-pre-wrap break-words font-sans text-sm text-ink">
@@ -201,6 +233,7 @@ export default function EmailDetail({
             </ul>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

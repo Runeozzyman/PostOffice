@@ -1,5 +1,6 @@
 import type { ComposeDraft } from "../types/compose";
 import type { EmailDetail, MailboxView } from "../types/email";
+import { htmlToPlain } from "./composeHtml";
 import { joinAddresses, parseAddressList, parseFrom } from "./parseFrom";
 
 function withPrefix(subject: string, prefix: "Re" | "Fwd") {
@@ -13,25 +14,10 @@ function withPrefix(subject: string, prefix: "Re" | "Fwd") {
   return `${prefix}: ${trimmed || "(no subject)"}`;
 }
 
-function htmlToText(html: string) {
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<\/div>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
 function originalBody(email: EmailDetail) {
   return (
     email.bodyText.trim() ||
-    htmlToText(email.bodyHtml) ||
+    htmlToPlain(email.bodyHtml) ||
     email.snippet.trim()
   );
 }
