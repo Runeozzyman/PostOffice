@@ -7,3 +7,5 @@ dist/
 dist-electron/
 **/dist-electron/
 release/
+release-*/
+post-office-winpack/
