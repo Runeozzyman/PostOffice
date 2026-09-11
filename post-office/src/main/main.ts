@@ -16,6 +16,7 @@ import {
 import { loadRefreshToken } from "../auth/tokenStorage";
 import { mimeFromFilename } from "../helpers/mimeFromFilename";
 import type { ComposeAttachment, ComposeDraft } from "../types/compose";
+import { startAppUpdater } from "./appUpdater";
 import { callMail, onMailEvent, startMailRuntime, stopMailRuntime } from "./mailRuntime";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -380,6 +381,7 @@ ipcMain.handle("google-sign-in", async () => {
 
 app.whenReady().then(async () => {
   createWindow();
+  startAppUpdater();
 
   try {
     await startMailRuntime({
