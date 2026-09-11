@@ -84,7 +84,7 @@
       ]
     },
     "mac": {
-      "icon": "src/assets/icon.png",
+      "icon": "src/assets/icon-mac.png",
       "category": "public.app-category.productivity",
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
