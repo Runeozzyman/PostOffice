@@ -3,7 +3,7 @@
   "author": "Austin Wort",
   "description": "User forward, desktop mail suite.",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -12,8 +12,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "dist": "npm run build && electron-builder --win --publish never",
+    "dist:mac": "npm run build && electron-builder --mac --publish never",
     "dist:dir": "npm run build && electron-builder --win --dir",
-    "release:github": "npm run build && electron-builder --win --publish always"
+    "release:github": "npm run build && electron-builder --win --mac --publish always"
   },
   "dependencies": {
     "@fontsource/montserrat": "^5.3.0",
@@ -81,6 +82,30 @@
           ]
         }
       ]
+    },
+    "mac": {
+      "icon": "src/assets/icon.png",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "sign": false
     },
     "nsis": {
       "oneClick": false,
