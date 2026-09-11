@@ -7,8 +7,11 @@ export function skinPayloadToObjectUrl(payload: {
       ? payload.data
       : new Uint8Array(payload.data);
 
+  const copy = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(copy).set(bytes);
+
   return URL.createObjectURL(
-    new Blob([bytes], { type: payload.mime || "image/png" })
+    new Blob([copy], { type: payload.mime || "image/png" })
   );
 }
 
