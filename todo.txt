@@ -3,7 +3,6 @@
 ------------------------------------------------------------------------------------------------------
 x (B) 2026-09-09 2026-09-11 Add bold, italic, underline in compose window
 x (B) 2026-09-10 2026-09-11 Make email header scroll up with subject bar for more vertical space
-------------------------------------------------------------------------------------------------------
 x (B) 2026-08-26 2026-08-26 Add image rendering in email
 x (C) 2026-08-26 2026-08-26 Create selectable themes
 x (A) 2026-08-26 2026-08-26 Separate UI and backend logic into seperate threads 

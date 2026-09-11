@@ -23,7 +23,7 @@ export default function MailslotCard({
         backgroundColor: mailslot.color,
         animationDelay: `${Math.min(animationIndex, 12) * 40}ms`,
       }}
-      className="mailslot-pop relative flex h-full min-h-0 min-w-0 flex-col justify-between overflow-hidden rounded-2xl p-3 text-left text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+      className="mailslot-pop relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl p-3 text-left text-white shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
     >
       <button
         type="button"
@@ -31,23 +31,23 @@ export default function MailslotCard({
         className="absolute inset-0 z-0 rounded-2xl"
         aria-label={`Open ${mailslot.title}`}
       />
-      <div className="relative z-10 flex items-start justify-between">
-        <Icon size={22} className="pointer-events-none shrink-0" />
-        <button
-          type="button"
-          aria-label={`Edit ${mailslot.title}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit(mailslot);
-          }}
-          className="rounded-lg bg-black/20 p-1.5 text-white hover:bg-black/35"
-        >
-          <FiEdit2 size={14} />
-        </button>
+      <button
+        type="button"
+        aria-label={`Edit ${mailslot.title}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          onEdit(mailslot);
+        }}
+        className="absolute right-3 top-3 z-10 rounded-lg bg-black/20 p-1.5 text-white hover:bg-black/35"
+      >
+        <FiEdit2 size={14} />
+      </button>
+      <div className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
+        <Icon size={36} className="shrink-0" />
+        <span className="line-clamp-2 text-lg font-semibold leading-tight">
+          {mailslot.title}
+        </span>
       </div>
-      <span className="pointer-events-none relative z-10 line-clamp-2 text-base font-semibold leading-tight">
-        {mailslot.title}
-      </span>
     </div>
   );
 }
