@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -36,6 +37,14 @@ import {
   type AppearanceSnapshot,
 } from "../helpers/appearancePresets";
 import {
+  applySkinBlur,
+  applySkinClass,
+  clampSkinBlur,
+  readStoredSkinBlur,
+  skinPayloadToObjectUrl,
+  storeSkinBlur,
+} from "../helpers/appSkin";
+import {
   readStoredKeybinds,
   readStoredShortcutsEnabled,
   storeKeybinds,
@@ -62,6 +71,11 @@ interface PreferencesContextValue {
   saveAppearancePreset: (index: number) => void;
   applyAppearancePreset: (index: number) => void;
   clearAppearancePreset: (index: number) => void;
+  skinUrl: string | null;
+  setSkinFromFile: () => Promise<void>;
+  clearSkin: () => Promise<void>;
+  skinBlur: number;
+  setSkinBlur: (value: number) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextValue | undefined>(
@@ -108,6 +122,65 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [appearancePresets, setAppearancePresets] = useState<AppearancePreset[]>(
     () => readStoredAppearancePresets()
   );
+  const [skinUrl, setSkinUrl] = useState<string | null>(null);
+  const skinUrlRef = useRef<string | null>(null);
+  const [skinBlur, setSkinBlurState] = useState(() => {
+    const initial = readStoredSkinBlur();
+    applySkinBlur(initial);
+    return initial;
+  });
+
+  const replaceSkinUrl = useCallback((next: string | null) => {
+    if (skinUrlRef.current) {
+      URL.revokeObjectURL(skinUrlRef.current);
+    }
+    skinUrlRef.current = next;
+    setSkinUrl(next);
+    applySkinClass(Boolean(next));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void window.electronAPI.getAppSkin().then((payload) => {
+      if (cancelled || !payload) {
+        if (!cancelled) {
+          applySkinClass(false);
+        }
+        return;
+      }
+
+      replaceSkinUrl(skinPayloadToObjectUrl(payload));
+    });
+
+    return () => {
+      cancelled = true;
+      if (skinUrlRef.current) {
+        URL.revokeObjectURL(skinUrlRef.current);
+        skinUrlRef.current = null;
+      }
+      applySkinClass(false);
+    };
+  }, [replaceSkinUrl]);
+
+  const setSkinFromFile = useCallback(async () => {
+    const payload = await window.electronAPI.pickAppSkin();
+    if (!payload) {
+      return;
+    }
+    replaceSkinUrl(skinPayloadToObjectUrl(payload));
+  }, [replaceSkinUrl]);
+
+  const clearSkin = useCallback(async () => {
+    await window.electronAPI.clearAppSkin();
+    replaceSkinUrl(null);
+  }, [replaceSkinUrl]);
+
+  const setSkinBlur = useCallback((value: number) => {
+    const next = storeSkinBlur(clampSkinBlur(value));
+    applySkinBlur(next);
+    setSkinBlurState(next);
+  }, []);
 
   const beginThemeTransition = () => {
     const root = document.documentElement;
@@ -254,6 +327,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       saveAppearancePreset,
       applyAppearancePreset,
       clearAppearancePreset,
+      skinUrl,
+      setSkinFromFile,
+      clearSkin,
+      skinBlur,
+      setSkinBlur,
     }),
     [
       theme,
@@ -274,6 +352,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       saveAppearancePreset,
       applyAppearancePreset,
       clearAppearancePreset,
+      skinUrl,
+      setSkinFromFile,
+      clearSkin,
+      skinBlur,
+      setSkinBlur,
     ]
   );
 

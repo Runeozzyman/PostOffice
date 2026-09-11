@@ -179,4 +179,13 @@ contextBridge.exposeInMainWorld("electronAPI", {
     filename: string;
   }): Promise<{ canceled: boolean }> =>
     ipcRenderer.invoke("save-attachment", payload),
+
+  getAppSkin: (): Promise<{ mime: string; data: Uint8Array } | null> =>
+    ipcRenderer.invoke("get-app-skin"),
+
+  pickAppSkin: (): Promise<{ mime: string; data: Uint8Array } | null> =>
+    ipcRenderer.invoke("pick-app-skin"),
+
+  clearAppSkin: (): Promise<boolean> =>
+    ipcRenderer.invoke("clear-app-skin"),
 });

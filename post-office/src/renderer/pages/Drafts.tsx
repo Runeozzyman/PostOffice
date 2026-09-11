@@ -150,13 +150,13 @@ export default function Drafts({
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
+    <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
         <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Drafts</h1>
         <ComposeButton />
       </div>
 
-      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
         <input
           ref={searchRef}
           type="search"
@@ -167,9 +167,9 @@ export default function Drafts({
         />
       </div>
 
-      {error && <p className="px-4 py-2 text-sm text-danger">{error}</p>}
+      {error && <p className="bg-surface px-4 py-2 text-sm text-danger">{error}</p>}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="skin-grid min-h-0 flex-1 overflow-y-auto">
         {loading && drafts.length === 0 ? (
           <p className="p-4 text-ink-muted">Loading…</p>
         ) : visible.length === 0 ? (

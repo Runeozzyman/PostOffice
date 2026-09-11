@@ -19,7 +19,7 @@ import type { Mailslot } from "../../types/mailslot";
 
 const HomePage = () => {
   const { openCompose } = useCompose();
-  const { shortcutsEnabled, keybinds } = usePreferences();
+  const { shortcutsEnabled, keybinds, skinUrl } = usePreferences();
   const [currentPage, setCurrentPage] = useState("mailslots");
   const [openedMailslotId, setOpenedMailslotId] = useState<string | null>(
     null
@@ -117,7 +117,14 @@ const HomePage = () => {
   ]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-page">
+    <div className="relative flex h-screen overflow-hidden bg-page">
+      {skinUrl && (
+        <div
+          className="app-skin"
+          style={{ backgroundImage: `url("${skinUrl}")` }}
+          aria-hidden="true"
+        />
+      )}
       <Sidebar
         setCurrentPage={(page) => {
           if (page === "mailslots") {
@@ -126,7 +133,7 @@ const HomePage = () => {
           goToPage(page);
         }}
       />
-      <main className="relative min-w-0 flex-1 overflow-hidden">
+      <main className="relative z-10 min-w-0 flex-1 overflow-hidden">
         <div
           className={
             currentPage === "inbox" ? "h-full min-w-0" : "hidden"

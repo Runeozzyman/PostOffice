@@ -11,6 +11,10 @@ import {
 } from "../helpers/appearancePresets";
 import { APP_THEMES } from "../helpers/theme";
 import {
+  SKIN_BLUR_MAX,
+  SKIN_BLUR_MIN,
+} from "../helpers/appSkin";
+import {
   APP_FONTS,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
@@ -44,14 +48,25 @@ export default function Settings() {
     saveAppearancePreset,
     applyAppearancePreset,
     clearAppearancePreset,
+    skinUrl,
+    setSkinFromFile,
+    clearSkin,
+    skinBlur,
+    setSkinBlur,
   } = usePreferences();
   const [sliderSize, setSliderSize] = useState(fontSize);
   const [inputSize, setInputSize] = useState(String(fontSize));
+  const [sliderBlur, setSliderBlur] = useState(skinBlur);
+  const [skinError, setSkinError] = useState<string | null>(null);
 
   useEffect(() => {
     setSliderSize(fontSize);
     setInputSize(String(fontSize));
   }, [fontSize]);
+
+  useEffect(() => {
+    setSliderBlur(skinBlur);
+  }, [skinBlur]);
 
   const commitFontSize = (value: number) => {
     if (!Number.isFinite(value)) {
@@ -122,6 +137,93 @@ export default function Settings() {
                   <ColorPicker color={themeColor} onChange={setThemeColor} />
                 </div>
               )}
+            </div>
+          </SettingsGroup>
+
+          <SettingsGroup
+            title="Skin"
+            description="A background image behind the message list. Search, tabs, and the rest of the chrome stay solid."
+          >
+            <div className="flex items-start gap-4 px-4 py-3">
+              <div
+                className="h-20 w-32 shrink-0 overflow-hidden rounded-lg border border-line bg-muted bg-cover bg-center"
+                style={
+                  skinUrl
+                    ? { backgroundImage: `url("${skinUrl}")` }
+                    : undefined
+                }
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-ink">
+                  {skinUrl ? "Custom background" : "No background"}
+                </p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  PNG, JPEG, WebP, or GIF up to 12 MB.
+                </p>
+                {skinError && (
+                  <p className="mt-1 text-sm text-danger">{skinError}</p>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSkinError(null);
+                      void setSkinFromFile().catch((error: unknown) => {
+                        setSkinError(
+                          error instanceof Error
+                            ? error.message
+                            : "Could not use that image."
+                        );
+                      });
+                    }}
+                    className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+                  >
+                    Upload image
+                  </button>
+                  {skinUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSkinError(null);
+                        void clearSkin().catch((error: unknown) => {
+                          setSkinError(
+                            error instanceof Error
+                              ? error.message
+                              : "Could not remove the skin."
+                          );
+                        });
+                      }}
+                      className="rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-ink">Blur</p>
+                <p className="text-sm text-ink-muted">
+                  Frost over the background, from none to a heavy blur.
+                </p>
+              </div>
+              <input
+                type="range"
+                min={SKIN_BLUR_MIN}
+                max={SKIN_BLUR_MAX}
+                step={1}
+                value={sliderBlur}
+                aria-label="Background blur"
+                onChange={(event) => setSliderBlur(Number(event.target.value))}
+                onPointerUp={(event) =>
+                  setSkinBlur(Number(event.currentTarget.value))
+                }
+                onKeyUp={(event) =>
+                  setSkinBlur(Number(event.currentTarget.value))
+                }
+                className="w-36 accent-accent"
+              />
             </div>
           </SettingsGroup>
 

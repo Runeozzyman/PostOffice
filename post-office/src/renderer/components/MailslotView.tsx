@@ -48,8 +48,8 @@ export default function MailslotView({
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
+    <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
         <button
           type="button"
           onClick={onBack}
@@ -87,7 +87,7 @@ export default function MailslotView({
         }}
       />
       {fileError && (
-        <p className="shrink-0 px-4 py-2 text-sm text-danger">{fileError}</p>
+        <p className="shrink-0 bg-surface px-4 py-2 text-sm text-danger">{fileError}</p>
       )}
 
       <div className="min-h-0 flex-1">

@@ -93,6 +93,9 @@ declare global {
         attachmentId: string;
         filename: string;
       }) => Promise<{ canceled: boolean }>;
+      getAppSkin: () => Promise<{ mime: string; data: Uint8Array } | null>;
+      pickAppSkin: () => Promise<{ mime: string; data: Uint8Array } | null>;
+      clearAppSkin: () => Promise<boolean>;
     };
   }
 }

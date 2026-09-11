@@ -288,6 +288,7 @@ html:not(.reduce-motion) .mailslot-stage:hover .mailslot-door {
 
 :root {
   --app-font-size: 16px;
+  --skin-blur: 14px;
   --app-font: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-family: var(--app-font);
   font-size: var(--app-font-size);
@@ -310,6 +311,29 @@ body {
   min-height: 100vh;
   background-color: var(--page);
   color: var(--ink);
+}
+
+.app-skin {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+html.has-skin .bg-page {
+  background-color: transparent;
+}
+
+html.has-skin .skin-page {
+  background-color: transparent;
+}
+
+html.has-skin .skin-grid {
+  background-color: color-mix(in srgb, var(--surface) 32%, transparent);
+  backdrop-filter: blur(var(--skin-blur)) saturate(1.06);
 }
 
 button,

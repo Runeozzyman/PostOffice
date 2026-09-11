@@ -506,8 +506,8 @@ export default function EmailListPanel({
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
+    <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
         <input
           ref={searchRef}
           type="search"
@@ -518,12 +518,16 @@ export default function EmailListPanel({
         />
       </div>
 
-      {error && <p className="px-4 py-2 text-sm text-danger">{error}</p>}
+      {error && (
+        <p className="bg-surface px-4 py-2 text-sm text-danger">{error}</p>
+      )}
       {openingId && (
-        <p className="px-4 py-2 text-sm text-ink-muted">Opening message…</p>
+        <p className="bg-surface px-4 py-2 text-sm text-ink-muted">
+          Opening message…
+        </p>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="skin-grid min-h-0 flex-1 overflow-y-auto">
         {loading && emails.length === 0 ? (
           <p className="p-4 text-ink-muted">Loading…</p>
         ) : emails.length === 0 ? (
@@ -553,7 +557,7 @@ export default function EmailListPanel({
         )}
       </div>
 
-      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-t border-line px-4 text-sm text-ink-secondary">
+      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-t border-line bg-surface px-4 text-sm text-ink-secondary">
         <div className="flex items-center gap-1">
           <button
             type="button"

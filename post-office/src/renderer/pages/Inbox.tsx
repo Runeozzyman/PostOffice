@@ -57,8 +57,8 @@ export default function Inbox({ keyboardActive, onOpenMailslot }: InboxProps) {
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line px-4">
+    <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
+      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
         <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Inbox</h1>
         <RefreshButton />
         <ComposeButton />
@@ -71,13 +71,13 @@ export default function Inbox({ keyboardActive, onOpenMailslot }: InboxProps) {
         }}
       />
       {error && (
-        <p className="shrink-0 px-4 py-2 text-sm text-danger">{error}</p>
+        <p className="shrink-0 bg-surface px-4 py-2 text-sm text-danger">{error}</p>
       )}
       {fileError && (
-        <p className="shrink-0 px-4 py-2 text-sm text-danger">{fileError}</p>
+        <p className="shrink-0 bg-surface px-4 py-2 text-sm text-danger">{fileError}</p>
       )}
       {syncing && (
-        <p className="shrink-0 px-4 py-2 text-sm text-ink-muted">
+        <p className="shrink-0 bg-surface px-4 py-2 text-sm text-ink-muted">
           Checking for new mail…
           {storedThisRun > 0 ? ` ${storedThisRun} new messages stored.` : ""}
         </p>

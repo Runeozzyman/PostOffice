@@ -72,7 +72,7 @@ export default function Mailslots({
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col bg-muted">
+    <div className="skin-page flex h-full min-w-0 flex-col bg-muted">
       <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4">
         <h1 className="text-lg font-semibold text-ink">Mailslots</h1>
         {mailslots.length >= MAX_MAILSLOTS && (
@@ -82,7 +82,7 @@ export default function Mailslots({
         )}
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col p-4">
+      <div className="skin-grid flex min-h-0 flex-1 flex-col p-4">
         {error && <p className="mb-3 shrink-0 text-sm text-danger">{error}</p>}
         {loading ? (
           <p className="text-sm text-ink-muted">Loading mailslots…</p>

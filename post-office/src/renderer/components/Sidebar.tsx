@@ -21,6 +21,7 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
   return (
     <aside
       className={`
+        relative z-10
         h-full shrink-0
         border-r border-line
         bg-surface

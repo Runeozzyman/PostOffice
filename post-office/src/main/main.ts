@@ -17,6 +17,11 @@ import { loadRefreshToken } from "../auth/tokenStorage";
 import { mimeFromFilename } from "../helpers/mimeFromFilename";
 import type { ComposeAttachment, ComposeDraft } from "../types/compose";
 import { startAppUpdater } from "./appUpdater";
+import {
+  clearAppSkin,
+  readAppSkin,
+  writeAppSkinFromPath,
+} from "./appSkin";
 import { callMail, onMailEvent, startMailRuntime, stopMailRuntime } from "./mailRuntime";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -362,6 +367,40 @@ ipcMain.handle(
     return { canceled: false };
   }
 );
+
+ipcMain.handle("get-app-skin", async () => {
+  const skin = readAppSkin();
+  if (!skin) {
+    return null;
+  }
+  return { mime: skin.mime, data: skin.data };
+});
+
+ipcMain.handle("pick-app-skin", async (event) => {
+  const browserWindow = BrowserWindow.fromWebContents(event.sender);
+  const options = {
+    properties: ["openFile" as const],
+    title: "Choose a background",
+    filters: [
+      { name: "Images", extensions: ["png", "jpg", "jpeg", "webp", "gif"] },
+    ],
+  };
+  const result = browserWindow
+    ? await dialog.showOpenDialog(browserWindow, options)
+    : await dialog.showOpenDialog(options);
+
+  if (result.canceled || !result.filePaths[0]) {
+    return null;
+  }
+
+  const skin = writeAppSkinFromPath(result.filePaths[0]);
+  return { mime: skin.mime, data: skin.data };
+});
+
+ipcMain.handle("clear-app-skin", async () => {
+  clearAppSkin();
+  return true;
+});
 
 ipcMain.handle("google-sign-out", async () => {
   signOutWithGoogle();
