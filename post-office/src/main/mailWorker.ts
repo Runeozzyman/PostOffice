@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { configureGmailSession, getAuthenticatedClient, rethrowIfGmailAuthFailed, setGmailRefreshToken } from "../auth/gmailSession";
+import { configureGmailSession, getAuthenticatedClient, isGmailAuthError, rethrowIfGmailAuthFailed, setGmailRefreshToken } from "../auth/gmailSession";
 import { initDatabase } from "../db/database";
 import { setUserDataPath } from "../db/paths";
 import {
@@ -99,6 +99,11 @@ async function runInboxSync(mode: "full" | "poll") {
     }
 
     return stored;
+  } catch (error) {
+    if (isGmailAuthError(error)) {
+      rethrowIfGmailAuthFailed(error);
+    }
+    throw error;
   } finally {
     mailboxSyncInFlight = false;
   }
@@ -350,6 +355,9 @@ try {
       setUserDataPath(message.init.userDataPath);
       configureGmailSession({
         refreshToken: message.init.refreshToken,
+        onAuthExpired: () => {
+          send({ kind: "event", event: "auth-expired" });
+        },
       });
       initDatabase();
       backfillSenderFields();

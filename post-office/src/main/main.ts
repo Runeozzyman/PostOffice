@@ -150,6 +150,13 @@ onMailEvent((message) => {
     return;
   }
 
+  if (message.event === "auth-expired") {
+    signOutWithGoogle();
+    void callMail("setRefreshToken", null).catch(() => undefined);
+    broadcast("auth-expired", null);
+    return;
+  }
+
   broadcast("email-action-failed", message.payload);
 });
 

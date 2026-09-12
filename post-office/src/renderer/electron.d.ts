@@ -35,6 +35,7 @@ declare global {
           message: string;
         }) => void
       ) => () => void;
+      onAuthExpired: (callback: () => void) => () => void;
       listDrafts: () => Promise<StoredDraft[]>;
       getDraft: (id: string) => Promise<StoredDraft | null>;
       saveDraft: (payload: ComposeDraft) => Promise<StoredDraft | null>;

@@ -60,7 +60,8 @@ export type MailEvent =
       kind: "event";
       event: "email-action-failed";
       payload: { email: Email | null; message: string };
-    };
+    }
+  | { kind: "event"; event: "auth-expired" };
 
 export type MailToWorker = MailRequest | { kind: "init"; init: MailWorkerInit };
 

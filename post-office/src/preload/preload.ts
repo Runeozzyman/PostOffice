@@ -125,6 +125,18 @@ contextBridge.exposeInMainWorld("electronAPI", {
     };
   },
 
+  onAuthExpired: (callback: () => void) => {
+    const listener = () => {
+      callback();
+    };
+
+    ipcRenderer.on("auth-expired", listener);
+
+    return () => {
+      ipcRenderer.removeListener("auth-expired", listener);
+    };
+  },
+
   listDrafts: (): Promise<StoredDraft[]> =>
     ipcRenderer.invoke("list-drafts"),
 

@@ -37,6 +37,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         checkAuthentication();
     }, []);
 
+    useEffect(() => {
+        return window.electronAPI.onAuthExpired(() => {
+            setIsAuthenticated(false);
+        });
+    }, []);
+
     const signIn = async () => {
         await window.electronAPI.signInWithGoogle();
 
