@@ -224,6 +224,31 @@ async function loadSelf(people: PeopleClient, auth: AuthClient) {
   }
 }
 
+async function listOtherContactsPage(
+  people: PeopleClient,
+  pageToken: string | undefined,
+  includeProfiles: boolean
+) {
+  const page = await people.otherContacts.list({
+    readMask: "emailAddresses,names,photos",
+    pageSize: 200,
+    pageToken,
+    ...(includeProfiles
+      ? {
+          sources: [
+            "READ_SOURCE_TYPE_CONTACT",
+            "READ_SOURCE_TYPE_PROFILE",
+          ] as const,
+        }
+      : {}),
+  });
+
+  return {
+    contacts: page.data.otherContacts,
+    nextPageToken: page.data.nextPageToken ?? undefined,
+  };
+}
+
 async function buildPhotoIndex(people: PeopleClient) {
   if (indexComplete) {
     return;
@@ -248,14 +273,9 @@ async function buildPhotoIndex(people: PeopleClient) {
   pageToken = undefined;
   try {
     do {
-      const page = await people.otherContacts.list({
-        readMask: "emailAddresses,names,photos",
-        sources: ["READ_SOURCE_TYPE_CONTACT", "READ_SOURCE_TYPE_PROFILE"],
-        pageSize: 200,
-        pageToken,
-      });
-      ingestPeople(page.data.otherContacts);
-      pageToken = page.data.nextPageToken ?? undefined;
+      const page = await listOtherContactsPage(people, pageToken, true);
+      ingestPeople(page.contacts);
+      pageToken = page.nextPageToken;
     } while (pageToken);
   } catch (error) {
     console.warn(
@@ -266,13 +286,9 @@ async function buildPhotoIndex(people: PeopleClient) {
     try {
       pageToken = undefined;
       do {
-        const page = await people.otherContacts.list({
-          readMask: "emailAddresses,names,photos",
-          pageSize: 200,
-          pageToken,
-        });
-        ingestPeople(page.data.otherContacts);
-        pageToken = page.data.nextPageToken ?? undefined;
+        const page = await listOtherContactsPage(people, pageToken, false);
+        ingestPeople(page.contacts);
+        pageToken = page.nextPageToken;
       } while (pageToken);
     } catch (fallbackError) {
       console.warn(
