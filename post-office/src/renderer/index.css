@@ -340,12 +340,42 @@ html.has-skin .skin-grid {
   overflow: hidden;
 }
 
-html.reduce-motion .mailbox-fold {
+.sidebar-rail {
+  width: 16rem;
+  transition: width 130ms cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+.sidebar-rail-closed {
+  width: 4rem;
+}
+
+.sidebar-label {
+  display: block;
+  min-width: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 1;
+  transition:
+    max-width 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
+    opacity 90ms ease-out;
+}
+
+.sidebar-rail-closed .sidebar-label {
+  max-width: 0;
+  opacity: 0;
+}
+
+html.reduce-motion .mailbox-fold,
+html.reduce-motion .sidebar-rail,
+html.reduce-motion .sidebar-label {
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mailbox-fold {
+  .mailbox-fold,
+  .sidebar-rail,
+  .sidebar-label {
     transition: none;
   }
 }

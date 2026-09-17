@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   FiInbox,
   FiStar,
@@ -17,43 +17,42 @@ interface SidebarProps {
 
 const Sidebar = ({ setCurrentPage }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const toggledFromPointer = useRef(false);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => !current);
+  };
 
   return (
     <aside
-      className={`
-        relative z-10
-        h-full shrink-0
-        border-r border-line
-        bg-surface
-        flex flex-col
-        overflow-hidden
-        ${collapsed ? "w-16" : "w-64"}
-    `}
+      className={`sidebar-rail relative z-10 flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-surface${
+        collapsed ? " sidebar-rail-closed" : ""
+      }`}
     >
-      <div className="flex h-16 items-center border-b border-line px-4">
+      <div className="flex h-16 items-center gap-2 border-b border-line px-3">
         <div className="min-w-0 flex-1 overflow-hidden">
-          <h1
-            className={`
-        text-lg font-semibold text-ink
-        whitespace-nowrap
-        ${collapsed ? "sr-only" : ""}
-      `}
-          >
+          <h1 className="sidebar-label text-lg font-semibold text-ink">
             PostOffice
           </h1>
         </div>
 
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="
-      shrink-0
-      p-2
-      rounded-md
-      text-ink-muted
-      hover:bg-hover
-      hover:text-ink
-      transition-colors
-    "
+          type="button"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          onPointerDown={(event) => {
+            if (event.button !== 0) return;
+            toggledFromPointer.current = true;
+            toggleCollapsed();
+          }}
+          onClick={() => {
+            if (toggledFromPointer.current) {
+              toggledFromPointer.current = false;
+              return;
+            }
+            toggleCollapsed();
+          }}
+          className="shrink-0 rounded-md p-2 text-ink-muted transition-colors hover:bg-hover hover:text-ink"
         >
           {collapsed ? (
             <FiChevronRight size={18} />
@@ -130,7 +129,7 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
 };
 
 interface SidebarItemProps {
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
   collapsed: boolean;
   onClick?: () => void;
@@ -144,26 +143,13 @@ const SidebarItem = ({
 }: SidebarItemProps) => {
   return (
     <button
+      type="button"
+      title={collapsed ? label : undefined}
       onClick={onClick}
-      className={`
-        w-full
-        flex items-center
-        rounded-md
-        text-sm
-        text-ink-secondary
-        hover:bg-hover
-        hover:text-ink
-        transition-colors
-        hover:cursor-pointer
-        ${collapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2"}
-      `}
+      className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-ink-secondary hover:cursor-pointer hover:bg-hover hover:text-ink"
     >
       <span className="shrink-0">{icon}</span>
-      {collapsed ? (
-        <span className="sr-only">{label}</span>
-      ) : (
-        <span className="truncate">{label}</span>
-      )}
+      <span className="sidebar-label truncate">{label}</span>
     </button>
   );
 };
