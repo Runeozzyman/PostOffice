@@ -7,7 +7,10 @@ import ComposeButton from "./ComposeButton";
 import RefreshButton from "./RefreshButton";
 import EmailListPanel from "./EmailListPanel";
 import InboxMailslotTabs from "./InboxMailslotTabs";
+import MailboxChromeToggle from "./MailboxChromeToggle";
+import MailboxFold from "./MailboxFold";
 import MailslotEditorModal from "./MailslotEditorModal";
+import { useMailboxChrome } from "../hooks/useMailboxChrome";
 
 interface MailslotViewProps {
   mailslot: Mailslot;
@@ -30,6 +33,9 @@ export default function MailslotView({
 }: MailslotViewProps) {
   const [editing, setEditing] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const { collapsed, toggleCollapsed, setSearchSlot, searchPortalEl } =
+    useMailboxChrome();
+  const hasMailslots = mailslots.length > 0;
   const Icon = mailslotIcon(mailslot.icon);
 
   const fileEmail = async (emailId: string, mailslotId: string) => {
@@ -49,43 +55,54 @@ export default function MailslotView({
 
   return (
     <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
+      <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line bg-surface px-4">
         <button
           type="button"
           onClick={onBack}
-          className="mr-3 shrink-0 text-sm text-ink-secondary hover:text-ink"
+          className="mr-1 shrink-0 text-sm text-ink-secondary hover:text-ink"
         >
           Back
         </button>
         <span
-          className="mr-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white"
           style={{ backgroundColor: mailslot.color }}
         >
           <Icon size={16} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-lg font-semibold text-ink">
+        <h1 className="max-w-[8rem] min-w-0 shrink-0 truncate text-lg font-semibold text-ink">
           {mailslot.title}
         </h1>
+        <div ref={setSearchSlot} className="min-w-0 flex-1" />
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
+          className="ml-1 inline-flex shrink-0 items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm text-ink-secondary hover:bg-hover"
         >
           <FiEdit2 size={14} />
           Edit
         </button>
+        {hasMailslots && (
+          <MailboxChromeToggle
+            collapsed={collapsed}
+            onToggle={toggleCollapsed}
+          />
+        )}
         <RefreshButton />
         <ComposeButton />
       </div>
 
-      <InboxMailslotTabs
-        mailslots={mailslots}
-        activeId={mailslot.id}
-        onOpen={(slot) => onOpenMailslot(slot.id)}
-        onFileEmail={(emailId, mailslotId) => {
-          void fileEmail(emailId, mailslotId);
-        }}
-      />
+      {hasMailslots && (
+        <MailboxFold collapsed={collapsed}>
+          <InboxMailslotTabs
+            mailslots={mailslots}
+            activeId={mailslot.id}
+            onOpen={(slot) => onOpenMailslot(slot.id)}
+            onFileEmail={(emailId, mailslotId) => {
+              void fileEmail(emailId, mailslotId);
+            }}
+          />
+        </MailboxFold>
+      )}
       {fileError && (
         <p className="shrink-0 bg-surface px-4 py-2 text-sm text-danger">{fileError}</p>
       )}
@@ -97,6 +114,8 @@ export default function MailslotView({
           keyboardActive={keyboardActive}
           canDragToMailslot
           emptyMessage="No messages in this mailslot yet. File mail from the inbox menu or drag a message onto a mailslot tab."
+          searchPortalEl={searchPortalEl}
+          hideSearchRow
         />
       </div>
 

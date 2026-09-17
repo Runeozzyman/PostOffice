@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Email, EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import type { Mailslot } from "../../types/mailslot";
 import { MAILSLOTS_CHANGED_EVENT } from "../helpers/mailslotEvents";
@@ -36,9 +37,11 @@ interface EmailListPanelProps {
   searchPlaceholder?: string;
   keyboardActive?: boolean;
   canDragToMailslot?: boolean;
+  searchPortalEl?: HTMLElement | null;
+  hideSearchRow?: boolean;
 }
 
-export default function EmailListPanel({
+function EmailListPanel({
   mailslotId,
   mailbox = "inbox",
   showMailslotColor,
@@ -46,6 +49,8 @@ export default function EmailListPanel({
   searchPlaceholder = "Search mail…",
   keyboardActive = false,
   canDragToMailslot = false,
+  searchPortalEl = null,
+  hideSearchRow = false,
 }: EmailListPanelProps) {
   const { shortcutsEnabled, keybinds } = usePreferences();
   const initialCached =
@@ -493,8 +498,21 @@ export default function EmailListPanel({
     });
   };
 
+  const searchField = (
+    <input
+      ref={searchRef}
+      type="search"
+      value={searchInput}
+      onChange={(event) => setSearchInput(event.target.value)}
+      placeholder={searchPlaceholder}
+      className={`w-full rounded-md border border-line bg-surface px-3 text-sm text-ink outline-none placeholder:text-ink-subtle focus:border-line-strong ${
+        searchPortalEl ? "py-1.5" : "py-2"
+      }`}
+    />
+  );
+
   if (selected) {
-    return (
+    const detail = (
       <EmailDetail
         email={selected}
         mailbox={mailbox}
@@ -503,20 +521,32 @@ export default function EmailListPanel({
         onStar={queueStar}
       />
     );
+
+    if (searchPortalEl) {
+      return (
+        <>
+          {createPortal(searchField, searchPortalEl)}
+          {detail}
+        </>
+      );
+    }
+
+    return detail;
   }
+
+  const searchRow = (
+    <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
+      {searchField}
+    </div>
+  );
 
   return (
     <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
-        <input
-          ref={searchRef}
-          type="search"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={searchPlaceholder}
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-subtle focus:border-line-strong"
-        />
-      </div>
+      {searchPortalEl
+        ? createPortal(searchField, searchPortalEl)
+        : hideSearchRow
+          ? null
+          : searchRow}
 
       {error && (
         <p className="bg-surface px-4 py-2 text-sm text-danger">{error}</p>
@@ -620,3 +650,5 @@ export default function EmailListPanel({
     </div>
   );
 }
+
+export default memo(EmailListPanel);

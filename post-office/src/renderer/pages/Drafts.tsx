@@ -151,20 +151,19 @@ export default function Drafts({
 
   return (
     <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
-        <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Drafts</h1>
-        <ComposeButton />
-      </div>
-
-      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
+      <div className="flex h-16 shrink-0 items-center gap-2 border-b border-line bg-surface px-4">
+        <h1 className="max-w-[7.5rem] shrink-0 truncate text-lg font-semibold text-ink">
+          Drafts
+        </h1>
         <input
           ref={searchRef}
           type="search"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Search drafts…"
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-ink-subtle focus:border-line-strong"
+          className="min-w-0 flex-1 rounded-md border border-line bg-surface px-3 py-1.5 text-sm text-ink outline-none placeholder:text-ink-subtle focus:border-line-strong"
         />
+        <ComposeButton />
       </div>
 
       {error && <p className="bg-surface px-4 py-2 text-sm text-danger">{error}</p>}

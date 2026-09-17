@@ -4,6 +4,7 @@ import {
   dialog,
   ipcMain,
   shell,
+  Menu,
 } from "electron";
 import fs from "node:fs";
 import path from "node:path";
@@ -124,6 +125,7 @@ function createWindow() {
 
   if (app.isPackaged) {
     void window.loadFile(path.join(__dirname, "../dist/index.html"));
+    Menu.setApplicationMenu(null);
   } else {
     void window.loadURL("http://localhost:5173");
   }

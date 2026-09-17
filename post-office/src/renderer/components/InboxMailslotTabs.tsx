@@ -8,6 +8,7 @@ import { mailslotIcon } from "../helpers/mailslotOptions";
 interface InboxMailslotTabsProps {
   mailslots: Mailslot[];
   activeId?: string | null;
+  compact?: boolean;
   onOpen: (mailslot: Mailslot) => void;
   onFileEmail: (emailId: string, mailslotId: string) => void;
 }
@@ -15,6 +16,7 @@ interface InboxMailslotTabsProps {
 export default function InboxMailslotTabs({
   mailslots,
   activeId = null,
+  compact = false,
   onOpen,
   onFileEmail,
 }: InboxMailslotTabsProps) {
@@ -28,7 +30,13 @@ export default function InboxMailslotTabs({
   }
 
   return (
-    <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-line bg-surface px-4 py-2">
+    <div
+      className={
+        compact
+          ? "flex min-w-0 max-w-[min(100%,28rem)] shrink overflow-x-auto gap-1"
+          : "flex shrink-0 gap-2 overflow-x-auto border-b border-line bg-surface px-4 py-2"
+      }
+    >
       {visible.map((mailslot, index) => {
         const Icon = mailslotIcon(mailslot.icon);
         const shortcut =
@@ -86,7 +94,11 @@ export default function InboxMailslotTabs({
                 onFileEmail(emailId, mailslot.id);
               }
             }}
-            className="flex max-w-[12rem] shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-left text-sm font-medium text-ink transition-[background-color,border-color,box-shadow] duration-150"
+            className={
+              compact
+                ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-[background-color,border-color,box-shadow] duration-150"
+                : "flex max-w-[12rem] shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-left text-sm font-medium text-ink transition-[background-color,border-color,box-shadow] duration-150"
+            }
             style={{
               borderColor: lit ? mailslot.color : "var(--line-strong)",
               backgroundColor: lit
@@ -96,7 +108,9 @@ export default function InboxMailslotTabs({
             }}
           >
             <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-150"
+              className={`flex shrink-0 items-center justify-center rounded-full transition-[background-color,color,box-shadow] duration-150 ${
+                compact ? "h-6 w-6" : "h-5 w-5"
+              }`}
               style={
                 lit
                   ? {
@@ -110,10 +124,12 @@ export default function InboxMailslotTabs({
                     }
               }
             >
-              <Icon size={11} />
+              <Icon size={compact ? 13 : 11} />
             </span>
-            <span className="min-w-0 truncate">{mailslot.title}</span>
-            {shortcut && (
+            {!compact && (
+              <span className="min-w-0 truncate">{mailslot.title}</span>
+            )}
+            {!compact && shortcut && (
               <span className="shrink-0 text-[10px] font-semibold text-ink-subtle">
                 {shortcut}
               </span>

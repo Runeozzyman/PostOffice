@@ -1,6 +1,4 @@
-import ComposeButton from "../components/ComposeButton";
-import RefreshButton from "../components/RefreshButton";
-import EmailListPanel from "../components/EmailListPanel";
+import MailboxListPage from "../components/MailboxListPage";
 
 export default function Trash({
   keyboardActive = false,
@@ -8,21 +6,13 @@ export default function Trash({
   keyboardActive?: boolean;
 }) {
   return (
-    <div className="skin-page flex h-full min-w-0 flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center border-b border-line bg-surface px-4">
-        <h1 className="min-w-0 flex-1 text-lg font-semibold text-ink">Trash</h1>
-        <RefreshButton />
-        <ComposeButton />
-      </div>
-      <div className="min-h-0 flex-1">
-        <EmailListPanel
-          mailbox="trash"
-          showMailslotColor={false}
-          keyboardActive={keyboardActive}
-          searchPlaceholder="Search trash…"
-          emptyMessage="Trash is empty."
-        />
-      </div>
-    </div>
+    <MailboxListPage
+      title="Trash"
+      mailbox="trash"
+      showMailslotColor={false}
+      keyboardActive={keyboardActive}
+      searchPlaceholder="Search trash…"
+      emptyMessage="Trash is empty."
+    />
   );
 }
