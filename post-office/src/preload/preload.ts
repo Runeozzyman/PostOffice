@@ -176,6 +176,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getAccountEmail: (): Promise<string | null> =>
     ipcRenderer.invoke("get-account-email"),
 
+  getProfilePhotos: (emails: string[]): Promise<Record<string, string | null>> =>
+    ipcRenderer.invoke("get-profile-photos", emails),
+
   listSignatures: (): Promise<GmailSignature[]> =>
     ipcRenderer.invoke("list-signatures"),
 

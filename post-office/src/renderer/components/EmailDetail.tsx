@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers} from "react-icons/fi";
 import { IoArrowBackSharp } from "react-icons/io5";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
+import { parseAddressList, parseFrom } from "../../helpers/parseFrom";
 import { attachmentPreviewKind } from "../helpers/attachmentPreview";
 import AttachmentPreview from "./AttachmentPreview";
 import EmailHtmlFrame from "./EmailHtmlFrame";
+import ProfileAvatar from "./ProfileAvatar";
 import {
   buildForwardDraft,
   buildReplyDraft,
@@ -32,6 +34,62 @@ function formatBytes(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function addressesFromHeader(header: string) {
+  const listed = parseAddressList(header);
+  if (listed.length > 0) {
+    return listed;
+  }
+
+  const trimmed = header.trim();
+  return trimmed ? [parseFrom(trimmed)] : [];
+}
+
+function AddressPeople({
+  label,
+  header,
+  photos,
+  tone,
+}: {
+  label?: string;
+  header: string;
+  photos: Record<string, string | null>;
+  tone: "secondary" | "muted";
+}) {
+  const people = addressesFromHeader(header);
+  const textClass =
+    tone === "secondary" ? "text-ink-secondary" : "text-ink-muted";
+
+  if (people.length === 0) {
+    return (
+      <p className={`text-sm ${textClass}`}>
+        {label ? `${label} ` : ""}
+        —
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {people.map((person, index) => (
+        <div key={`${person.email}-${index}`} className="flex min-w-0 items-center gap-2">
+          <ProfileAvatar
+            email={person.email}
+            name={person.displayName}
+            photoUrl={photos[person.email]}
+          />
+          <p className={`min-w-0 truncate text-sm ${textClass}`}>
+            {label && index === 0 ? `${label} ` : null}
+            {person.displayName &&
+            person.displayName.toLowerCase() !== person.email
+              ? `${person.displayName} <${person.email}>`
+              : person.email}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function EmailDetail({
   email,
   mailbox,
@@ -42,11 +100,39 @@ export default function EmailDetail({
   const { openCompose } = useCompose();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Record<string, string | null>>({});
   const inTrash = mailbox === "trash";
   const starred = email.labels.includes("STARRED");
   const listedAttachments = email.attachments.filter(
     (attachment) => !attachment.inline
   );
+  const photoEmails = useMemo(() => {
+    return [
+      ...addressesFromHeader(email.from),
+      ...addressesFromHeader(email.to),
+    ].map((person) => person.email);
+  }, [email.from, email.to]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void window.electronAPI
+      .getProfilePhotos(photoEmails)
+      .then((next) => {
+        if (!cancelled) {
+          setPhotos(next);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPhotos({});
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [email.id, photoEmails]);
 
   const reply = async (replyAll: boolean) => {
     const accountEmail = await window.electronAPI.getAccountEmail();
@@ -141,9 +227,16 @@ export default function EmailDetail({
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
         <div className="shrink-0 border-b border-line px-4 py-3">
-          <p className="text-sm text-ink-secondary">{email.from}</p>
-          <p className="text-sm text-ink-muted">To: {email.to || "—"}</p>
-          <p className="text-xs text-ink-muted">{formatListDate(email.date)}</p>
+          <AddressPeople header={email.from} photos={photos} tone="secondary" />
+          <div className="mt-1.5">
+            <AddressPeople
+              label="To:"
+              header={email.to}
+              photos={photos}
+              tone="muted"
+            />
+          </div>
+          <p className="mt-1.5 text-xs text-ink-muted">{formatListDate(email.date)}</p>
           {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
         </div>
 

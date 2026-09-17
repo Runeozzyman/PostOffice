@@ -27,6 +27,7 @@ import {
   enqueueGmailLabelSync,
   nextLabelGeneration,
 } from "../services/gmailBackground";
+import { clearGmailPhotoCache, getGmailProfilePhotos } from "../services/gmailPhotos";
 import { clearGmailProfileCache, getGmailAddress } from "../services/gmailProfile";
 import { sendGmailMessage } from "../services/gmailSend";
 import { setGmailStarred } from "../services/gmailStar";
@@ -286,6 +287,12 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
       );
     case "getAccountEmail":
       return getGmailAddress();
+    case "getProfilePhotos":
+      return getGmailProfilePhotos(
+        Array.isArray(payload)
+          ? payload.filter((value): value is string => typeof value === "string")
+          : []
+      );
     case "loadAttachment": {
       const input = payload as { messageId: string; attachmentId: string };
       const stored = getStoredAttachment(input.messageId, input.attachmentId);
@@ -335,6 +342,7 @@ async function handle(method: MailMethod, payload: unknown): Promise<unknown> {
     case "setRefreshToken":
       setGmailRefreshToken(typeof payload === "string" ? payload : null);
       clearGmailProfileCache();
+      clearGmailPhotoCache();
       clearGmailSignatureCache();
       return true;
     default: {

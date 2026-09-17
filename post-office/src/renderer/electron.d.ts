@@ -61,6 +61,9 @@ declare global {
         { email: string; name: string }[]
       >;
       getAccountEmail: () => Promise<string | null>;
+      getProfilePhotos: (
+        emails: string[]
+      ) => Promise<Record<string, string | null>>;
       listSignatures: () => Promise<GmailSignature[]>;
       listMailslots: () => Promise<Mailslot[]>;
       createMailslot: (payload: {

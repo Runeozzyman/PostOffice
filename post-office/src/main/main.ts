@@ -334,6 +334,10 @@ ipcMain.handle("get-account-email", async () => {
   return callMail("getAccountEmail");
 });
 
+ipcMain.handle("get-profile-photos", async (_event, emails: string[]) => {
+  return callMail("getProfilePhotos", Array.isArray(emails) ? emails : []);
+});
+
 ipcMain.handle("list-signatures", async () => {
   return callMail("listSignatures");
 });

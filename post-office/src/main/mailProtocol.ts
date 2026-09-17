@@ -28,6 +28,7 @@ export type MailMethod =
   | "deleteDraft"
   | "suggestAddresses"
   | "getAccountEmail"
+  | "getProfilePhotos"
   | "loadAttachment"
   | "listSignatures"
   | "setRefreshToken";
@@ -138,6 +139,10 @@ export interface MailMethodMap {
     result: { email: string; name: string }[];
   };
   getAccountEmail: { payload: undefined; result: string | null };
+  getProfilePhotos: {
+    payload: string[];
+    result: Record<string, string | null>;
+  };
   loadAttachment: {
     payload: { messageId: string; attachmentId: string };
     result: { filename: string; mimeType: string; dataBase64: string };
