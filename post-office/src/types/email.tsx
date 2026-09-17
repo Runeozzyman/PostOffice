@@ -3,6 +3,8 @@ export interface EmailAttachment {
   filename: string;
   mimeType: string;
   size: number;
+  contentId?: string;
+  inline?: boolean;
 }
 
 export interface Email {

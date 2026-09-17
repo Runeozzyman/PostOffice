@@ -1,7 +1,18 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 import {
   FiBold,
+  FiImage,
   FiItalic,
+  FiLink,
+  FiList,
   FiMaximize2,
   FiMinimize2,
   FiMinus,
@@ -19,9 +30,21 @@ import {
   isComposeBodyEmpty,
   plainToEditorHtml,
 } from "../../helpers/composeHtml";
+import { sanitizeEmailHtml } from "../../helpers/emailHtml";
 import type { ComposeAttachment, GmailSignature } from "../../types/compose";
 import { splitQuotedBody } from "../../helpers/splitQuotedBody";
 import AddressField from "./AddressField";
+
+const FONT_FACES = [
+  "Arial",
+  "Calibri",
+  "Georgia",
+  "Times New Roman",
+  "Courier New",
+  "Verdana",
+  "Tahoma",
+  "Trebuchet MS",
+];
 
 const emptyDraft = {
   to: "",
@@ -43,7 +66,37 @@ function formatBytes(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ComposeWindow() {
+class ComposeErrorBoundary extends Component<
+  { children: ReactNode; onClose: () => void },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    if (this.state.failed) {
+      return (
+        <div className="compose-shell compose-shell--docked p-3 text-sm text-ink">
+          <p className="mb-2">Compose could not open.</p>
+          <button
+            type="button"
+            className="rounded-md border border-line px-2 py-1 text-ink-secondary hover:bg-hover"
+            onClick={this.props.onClose}
+          >
+            Close
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function ComposeWindowInner() {
   const {
     mode,
     sessionId,
@@ -68,12 +121,14 @@ export default function ComposeWindow() {
   const [error, setError] = useState<string | null>(null);
   const [signatures, setSignatures] = useState<GmailSignature[]>([]);
   const [signatureId, setSignatureId] = useState("");
+  const [motionReady, setMotionReady] = useState(false);
   const [formats, setFormats] = useState({
     bold: false,
     italic: false,
     underline: false,
   });
   const editorRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const ignoreSavesRef = useRef(false);
   const latestRef = useRef({
     draft: emptyDraft,
@@ -149,6 +204,13 @@ export default function ComposeWindow() {
   );
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setMotionReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     registerPersist(() => persist({ notify: true }));
     return () => registerPersist(null);
   }, [persist, registerPersist]);
@@ -216,7 +278,11 @@ export default function ComposeWindow() {
     const editor = editorRef.current;
 
     if (editor) {
-      editor.innerHTML = plainToEditorHtml(seed?.body ?? "");
+      try {
+        editor.innerHTML = plainToEditorHtml(seed?.body ?? "");
+      } catch {
+        editor.textContent = seed?.body ?? "";
+      }
     }
   }, [mode, sessionId, seed]);
 
@@ -269,10 +335,9 @@ export default function ComposeWindow() {
     }
 
     const { before, after } = splitQuotedBody(draft.body);
-    const signatureHtml = escapeHtml(selectedSignature.text).replaceAll(
-      "\n",
-      "<br>"
-    );
+    const signatureHtml = selectedSignature.html
+      ? sanitizeEmailHtml(selectedSignature.html)
+      : escapeHtml(selectedSignature.text).replaceAll("\n", "<br>");
     const next = [before, signatureHtml, after]
       .map((part) => part.trim())
       .filter((part) => htmlToPlain(part).length > 0)
@@ -300,10 +365,31 @@ export default function ComposeWindow() {
     });
   };
 
-  const applyFormat = (command: "bold" | "italic" | "underline") => {
+  const applyFormat = (
+    command: string,
+    value?: string
+  ) => {
     editorRef.current?.focus();
-    document.execCommand(command, false);
+    document.execCommand(command, false, value);
     syncEditorBody();
+  };
+
+  const insertLink = () => {
+    const href = window.prompt("Link URL", "https://");
+    if (!href) {
+      return;
+    }
+    applyFormat("createLink", href);
+  };
+
+  const insertImageFromFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        applyFormat("insertImage", reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const requestClose = () => {
@@ -521,9 +607,22 @@ export default function ComposeWindow() {
         suppressContentEditableWarning
         onInput={syncEditorBody}
         onPaste={(event) => {
+          const html = event.clipboardData.getData("text/html");
+          if (!html) {
+            return;
+          }
           event.preventDefault();
-          const text = event.clipboardData.getData("text/plain");
-          document.execCommand("insertText", false, text);
+          try {
+            document.execCommand(
+              "insertHTML",
+              false,
+              sanitizeEmailHtml(html)
+            );
+          } catch {
+            const text = event.clipboardData.getData("text/plain");
+            document.execCommand("insertText", false, text);
+          }
+          syncEditorBody();
         }}
         className="compose-body min-h-0 flex-1 overflow-auto bg-transparent px-3 py-3 text-sm text-ink outline-none"
       />
@@ -607,6 +706,74 @@ export default function ComposeWindow() {
           </button>
           <button
             type="button"
+            aria-label="Bulleted list"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => applyFormat("insertUnorderedList")}
+            className="rounded-md p-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiList size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Insert link"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={insertLink}
+            className="rounded-md p-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiLink size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Insert image"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => imageInputRef.current?.click()}
+            className="rounded-md p-1.5 text-sm text-ink-secondary hover:bg-hover"
+          >
+            <FiImage size={16} />
+          </button>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                insertImageFromFile(file);
+              }
+              event.target.value = "";
+            }}
+          />
+          <select
+            aria-label="Font"
+            defaultValue=""
+            onChange={(event) => {
+              if (event.target.value) {
+                applyFormat("fontName", event.target.value);
+                event.target.value = "";
+              }
+            }}
+            className="max-w-28 truncate rounded-md border border-line bg-surface px-1 py-1 text-xs text-ink outline-none"
+          >
+            <option value="" disabled>
+              Font
+            </option>
+            {FONT_FACES.map((face) => (
+              <option key={face} value={face}>
+                {face}
+              </option>
+            ))}
+          </select>
+          <input
+            type="color"
+            aria-label="Text color"
+            defaultValue="#111111"
+            onMouseDown={(event) => event.preventDefault()}
+            onChange={(event) => applyFormat("foreColor", event.target.value)}
+            className="h-7 w-7 cursor-pointer rounded border border-line bg-surface p-0"
+          />
+          <button
+            type="button"
             aria-label="Attach files"
             onClick={() => void pickFiles()}
             className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-ink-secondary hover:bg-hover hover:text-ink"
@@ -652,7 +819,9 @@ export default function ComposeWindow() {
 
   return (
     <div
-      className={`compose-shell compose-shell--${mode}`}
+      className={`compose-shell compose-shell--${mode}${
+        motionReady ? " compose-shell-ready" : ""
+      }`}
       onDragEnter={(event) => {
         event.preventDefault();
         if (event.dataTransfer.types.includes("Files")) {
@@ -675,5 +844,19 @@ export default function ComposeWindow() {
       {chrome}
       {fields}
     </div>
+  );
+}
+
+export default function ComposeWindow() {
+  const { close, mode, sessionId } = useCompose();
+
+  if (mode === "closed") {
+    return null;
+  }
+
+  return (
+    <ComposeErrorBoundary key={sessionId} onClose={close}>
+      <ComposeWindowInner />
+    </ComposeErrorBoundary>
   );
 }

@@ -477,7 +477,7 @@ export default function Settings() {
                   again.
                 </p>
               </div>
-              <SignOutButton />
+                <SignOutButton />
             </div>
           </SettingsGroup>
         </div>

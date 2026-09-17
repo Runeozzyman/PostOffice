@@ -1,6 +1,7 @@
 import type { ComposeDraft } from "../types/compose";
 import type { EmailDetail, MailboxView } from "../types/email";
-import { htmlToPlain } from "./composeHtml";
+import { escapeHtml } from "./composeHtml";
+import { sanitizeEmailHtml } from "./emailHtml";
 import { joinAddresses, parseAddressList, parseFrom } from "./parseFrom";
 
 function withPrefix(subject: string, prefix: "Re" | "Fwd") {
@@ -14,21 +15,18 @@ function withPrefix(subject: string, prefix: "Re" | "Fwd") {
   return `${prefix}: ${trimmed || "(no subject)"}`;
 }
 
-function originalBody(email: EmailDetail) {
-  return (
-    email.bodyText.trim() ||
-    htmlToPlain(email.bodyHtml) ||
-    email.snippet.trim()
-  );
+function originalHtml(email: EmailDetail) {
+  if (email.bodyHtml.trim()) {
+    return sanitizeEmailHtml(email.bodyHtml);
+  }
+
+  const text =
+    email.bodyText.trim() || email.snippet.trim() || "No content";
+  return escapeHtml(text).replaceAll("\n", "<br>");
 }
 
 function quoteOriginal(email: EmailDetail) {
-  const quoted = originalBody(email)
-    .split("\n")
-    .map((line) => `> ${line}`)
-    .join("\n");
-
-  return `\n\nOn ${email.date}, ${email.from} wrote:\n\n${quoted}`;
+  return `<div><br></div><div class="gmail_quote"><div dir="ltr" class="gmail_attr">On ${escapeHtml(email.date)}, ${escapeHtml(email.from)} wrote:<br></div><blockquote class="gmail_quote" style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">${originalHtml(email)}</blockquote></div>`;
 }
 
 function isOutgoing(email: EmailDetail, mailbox?: MailboxView) {
@@ -81,11 +79,11 @@ export function buildReplyDraft(
 }
 
 export function buildForwardDraft(email: EmailDetail): ComposeDraft {
-  const body = originalBody(email);
+  const body = originalHtml(email);
 
   return {
     to: "",
     subject: withPrefix(email.subject, "Fwd"),
-    body: `\n\n---------- Forwarded message ----------\nFrom: ${email.from}\nDate: ${email.date}\nSubject: ${email.subject || "(no subject)"}\nTo: ${email.to || "—"}\n\n${body}`,
+    body: `<div><br></div><div>---------- Forwarded message ----------<br>From: ${escapeHtml(email.from)}<br>Date: ${escapeHtml(email.date)}<br>Subject: ${escapeHtml(email.subject || "(no subject)")}<br>To: ${escapeHtml(email.to || "—")}<br></div><div><br></div>${body}`,
   };
 }

@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { FiCornerUpLeft, FiRotateCcw, FiShare2, FiStar, FiTrash2, FiUsers} from "react-icons/fi";
 import { IoArrowBackSharp } from "react-icons/io5";
 import type { EmailDetail as EmailDetailType, MailboxView } from "../../types/email";
 import { formatListDate } from "../../helpers/formatListDate";
-import { htmlWithOpenableLinks } from "../../helpers/htmlWithOpenableLinks";
 import { attachmentPreviewKind } from "../helpers/attachmentPreview";
 import AttachmentPreview from "./AttachmentPreview";
+import EmailHtmlFrame from "./EmailHtmlFrame";
 import {
   buildForwardDraft,
   buildReplyDraft,
@@ -40,39 +40,13 @@ export default function EmailDetail({
   onStar,
 }: EmailDetailProps) {
   const { openCompose } = useCompose();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const inTrash = mailbox === "trash";
   const starred = email.labels.includes("STARRED");
-
-  const sizeIframe = () => {
-    const iframe = iframeRef.current;
-    const doc = iframe?.contentDocument;
-
-    if (!iframe || !doc?.documentElement) {
-      return;
-    }
-
-    const height = Math.max(
-      doc.documentElement.scrollHeight,
-      doc.body?.scrollHeight ?? 0
-    );
-    iframe.style.height = `${Math.max(height, 48)}px`;
-  };
-
-  const onIframeLoad = () => {
-    sizeIframe();
-    const doc = iframeRef.current?.contentDocument;
-
-    if (!doc) {
-      return;
-    }
-
-    for (const image of doc.images) {
-      image.addEventListener("load", sizeIframe);
-    }
-  };
+  const listedAttachments = email.attachments.filter(
+    (attachment) => !attachment.inline
+  );
 
   const reply = async (replyAll: boolean) => {
     const accountEmail = await window.electronAPI.getAccountEmail();
@@ -165,37 +139,34 @@ export default function EmailDetail({
           </button>
         </div>
       </div>
-      <div className="skin-grid min-h-0 min-w-0 flex-1 overflow-auto">
-        <div className="border-b border-line px-4 py-3">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-surface">
+        <div className="shrink-0 border-b border-line px-4 py-3">
           <p className="text-sm text-ink-secondary">{email.from}</p>
           <p className="text-sm text-ink-muted">To: {email.to || "—"}</p>
           <p className="text-xs text-ink-muted">{formatListDate(email.date)}</p>
           {saveError && <p className="mt-2 text-xs text-danger">{saveError}</p>}
         </div>
 
-        <div className="p-4">
+        <div className="flex min-h-0 flex-1 flex-col bg-white">
         {email.bodyHtml ? (
-          <iframe
-            ref={iframeRef}
-            title="Email content"
-            sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
-            srcDoc={htmlWithOpenableLinks(email.bodyHtml)}
-            onLoad={onIframeLoad}
-            className="w-full border-0 bg-white"
+          <EmailHtmlFrame
+            messageId={email.id}
+            html={email.bodyHtml}
+            attachments={email.attachments}
           />
         ) : (
-          <pre className="whitespace-pre-wrap break-words font-sans text-sm text-ink">
+          <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-words p-4 font-sans text-sm text-ink">
             {email.bodyText || email.snippet || "No content"}
           </pre>
         )}
 
-        {email.attachments.length > 0 && (
-          <div className="mt-6 border-t border-line pt-4">
+        {listedAttachments.length > 0 && (
+          <div className="shrink-0 border-t border-line bg-surface px-4 py-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-ink-muted">
               Attachments
             </p>
             <ul className="space-y-4">
-              {email.attachments.map((attachment) => {
+              {listedAttachments.map((attachment) => {
                 const previewable = Boolean(
                   attachmentPreviewKind(attachment.mimeType, attachment.filename)
                 );

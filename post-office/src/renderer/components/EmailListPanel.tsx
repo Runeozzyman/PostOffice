@@ -587,13 +587,13 @@ function EmailListPanel({
         )}
       </div>
 
-      <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-t border-line bg-surface px-4 text-sm text-ink-secondary">
-        <div className="flex items-center gap-1">
+      <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-t border-line bg-surface px-3 text-xs text-ink-secondary">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(1)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             First
           </button>
@@ -601,7 +601,7 @@ function EmailListPanel({
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(page - 10)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             -10
           </button>
@@ -609,23 +609,23 @@ function EmailListPanel({
             type="button"
             disabled={page <= 1}
             onClick={() => goToPage(page - 1)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Previous
           </button>
         </div>
 
-        <span className="shrink-0 text-center leading-tight">
+        <span className="shrink-0 text-center">
           Page {page} of {pageCount}
-          <span className="block text-xs text-ink-subtle">{rangeLabel}</span>
+          <span className="text-ink-subtle"> · {rangeLabel}</span>
         </span>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(page + 1)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Next
           </button>
@@ -633,7 +633,7 @@ function EmailListPanel({
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(page + 10)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             +10
           </button>
@@ -641,7 +641,7 @@ function EmailListPanel({
             type="button"
             disabled={page >= pageCount}
             onClick={() => goToPage(pageCount)}
-            className="rounded-md px-2 py-1 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
+            className="rounded px-2 py-0.5 hover:bg-hover disabled:cursor-not-allowed disabled:text-ink-faint"
           >
             Last
           </button>

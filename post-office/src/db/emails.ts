@@ -29,6 +29,8 @@ interface AttachmentRecord {
   filename: string;
   mime_type: string;
   size: number;
+  content_id?: string;
+  is_inline?: number;
 }
 
 export interface StoredAttachment extends EmailAttachment {
@@ -127,8 +129,10 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
       filename,
       mime_type,
       size,
-      data
-    ) VALUES (?, ?, ?, ?, ?, ?)
+      data,
+      content_id,
+      is_inline
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   db.exec("BEGIN");
@@ -165,7 +169,9 @@ export function replaceEmails(emails: UpsertEmailInput[]): void {
           attachment.filename,
           attachment.mimeType,
           attachment.size,
-          dataById.get(attachment.id) ?? null
+          dataById.get(attachment.id) ?? null,
+          attachment.contentId ?? "",
+          attachment.inline ? 1 : 0
         );
       }
     }
@@ -455,7 +461,7 @@ export function getEmail(id: string): EmailDetail | null {
   const attachments = getDb()
     .prepare(
       `
-      SELECT id, filename, mime_type, size
+      SELECT id, filename, mime_type, size, content_id, is_inline
       FROM attachments
       WHERE email_id = ?
       ORDER BY filename
@@ -472,6 +478,8 @@ export function getEmail(id: string): EmailDetail | null {
       filename: attachment.filename,
       mimeType: attachment.mime_type,
       size: attachment.size,
+      contentId: attachment.content_id || undefined,
+      inline: Boolean(attachment.is_inline),
     })),
   };
 }

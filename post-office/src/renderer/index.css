@@ -341,41 +341,41 @@ html.has-skin .skin-grid {
 }
 
 .sidebar-rail {
-  width: 16rem;
-  transition: width 130ms cubic-bezier(0.2, 0.85, 0.25, 1);
-}
-
-.sidebar-rail-closed {
-  width: 4rem;
+  width: max-content;
+  min-width: 4rem;
 }
 
 .sidebar-label {
-  display: block;
+  display: grid;
+  grid-template-columns: 1fr;
   min-width: 0;
-  max-width: 12rem;
-  overflow: hidden;
-  white-space: nowrap;
   opacity: 1;
   transition:
-    max-width 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
-    opacity 90ms ease-out;
+    grid-template-columns 100ms cubic-bezier(0.2, 0.9, 0.25, 1),
+    opacity 100ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.sidebar-label-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .sidebar-rail-closed .sidebar-label {
-  max-width: 0;
+  grid-template-columns: 0fr;
   opacity: 0;
 }
 
 html.reduce-motion .mailbox-fold,
-html.reduce-motion .sidebar-rail,
-html.reduce-motion .sidebar-label {
+html.reduce-motion .sidebar-label,
+html.reduce-motion .compose-shell {
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mailbox-fold,
-  .sidebar-rail,
-  .sidebar-label {
+  .sidebar-label,
+  .compose-shell {
     transition: none;
   }
 }
@@ -424,14 +424,14 @@ select {
     animation: email-pop-in 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  html:not(.reduce-motion) .compose-shell {
+  html:not(.reduce-motion) .compose-shell.compose-shell-ready {
     transition:
-      top 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      right 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      bottom 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      left 320ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-radius 280ms ease,
-      box-shadow 280ms ease;
+      top 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
+      right 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
+      bottom 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
+      left 130ms cubic-bezier(0.2, 0.85, 0.25, 1),
+      border-radius 130ms ease,
+      box-shadow 130ms ease;
   }
 }
 
@@ -442,15 +442,12 @@ select {
   flex-direction: column;
   overflow: hidden;
   background: var(--surface);
-}
-
-.compose-shell--docked {
   top: max(0px, calc(100% - 32rem));
   right: 1rem;
   bottom: 0;
   left: max(1rem, calc(100% - 1rem - 32rem));
-  border-radius: 0.5rem 0.5rem 0 0;
   border: 1px solid var(--line);
+  border-radius: 0.5rem 0.5rem 0 0;
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
 }
 
@@ -460,18 +457,33 @@ select {
   bottom: 0;
   left: 0;
   border-radius: 0;
-  border: 1px solid transparent;
+  border-color: transparent;
   box-shadow: none;
 }
 
 .compose-shell--minimized {
   top: calc(100% - 2.75rem);
-  right: 1rem;
-  bottom: 0;
   left: max(1rem, calc(100% - 1rem - 18rem));
-  border-radius: 0.5rem 0.5rem 0 0;
-  border: 1px solid var(--line);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.2);
+}
+
+.compose-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+.compose-body ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.compose-body ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+
+.compose-body a {
+  color: #2563eb;
+  text-decoration: underline;
 }
 
 .compose-body:empty::before,

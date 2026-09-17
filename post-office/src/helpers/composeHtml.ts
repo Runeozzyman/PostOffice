@@ -1,14 +1,5 @@
-const ALLOWED_TAGS = new Set([
-  "b",
-  "i",
-  "u",
-  "strong",
-  "em",
-  "br",
-  "div",
-  "p",
-  "span",
-]);
+import { htmlToPlain as htmlToPlainText } from "./htmlToPlain";
+import { sanitizeEmailHtml } from "./emailHtml";
 
 export function escapeHtml(value: string) {
   return value
@@ -23,18 +14,7 @@ export function looksLikeHtml(value: string) {
 }
 
 export function htmlToPlain(html: string) {
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<\/div>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return htmlToPlainText(html);
 }
 
 export function plainToEditorHtml(value: string) {
@@ -43,7 +23,7 @@ export function plainToEditorHtml(value: string) {
   }
 
   if (looksLikeHtml(value)) {
-    return value;
+    return sanitizeEmailHtml(value);
   }
 
   return escapeHtml(value).replaceAll("\r\n", "\n").replaceAll("\n", "<br>");
@@ -54,17 +34,5 @@ export function isComposeBodyEmpty(value: string) {
 }
 
 export function sanitizeComposeHtml(html: string) {
-  return html.replace(/<\/?([a-z0-9]+)([^>]*)>/gi, (full, tag: string) => {
-    const name = tag.toLowerCase();
-
-    if (!ALLOWED_TAGS.has(name)) {
-      return "";
-    }
-
-    if (name === "br") {
-      return "<br>";
-    }
-
-    return full.startsWith("</") ? `</${name}>` : `<${name}>`;
-  });
+  return sanitizeEmailHtml(html);
 }

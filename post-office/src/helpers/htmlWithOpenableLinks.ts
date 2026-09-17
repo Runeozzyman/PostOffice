@@ -1,4 +1,27 @@
 import { autolinkHtml } from "./signatureHtml";
+import { sanitizeEmailHtml } from "./emailHtml";
+
+const VIEWER_CSS = `
+  html, body { margin: 0; height: 100%; }
+  html { background: #fff; }
+  body {
+    min-height: 100%;
+    color: #111;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  img { max-width: 100%; height: auto; }
+  table { max-width: 100%; }
+  pre { white-space: pre-wrap; }
+  blockquote.gmail_quote, .gmail_quote {
+    margin: 0 0 0 0.8ex;
+    border-left: 1px solid #ccc;
+    padding-left: 1ex;
+  }
+`;
 
 function isSafeExternalUrl(href: string) {
   try {
@@ -10,7 +33,10 @@ function isSafeExternalUrl(href: string) {
 }
 
 export function htmlWithOpenableLinks(html: string) {
-  const document = new DOMParser().parseFromString(autolinkHtml(html), "text/html");
+  const document = new DOMParser().parseFromString(
+    autolinkHtml(sanitizeEmailHtml(html)),
+    "text/html"
+  );
 
   for (const anchor of document.querySelectorAll("a[href]")) {
     const href = anchor.getAttribute("href");
@@ -27,5 +53,15 @@ export function htmlWithOpenableLinks(html: string) {
     anchor.setAttribute("rel", "noopener noreferrer");
   }
 
-  return document.documentElement.outerHTML;
+  if (!document.querySelector("meta[charset]")) {
+    const meta = document.createElement("meta");
+    meta.setAttribute("charset", "utf-8");
+    document.head.prepend(meta);
+  }
+
+  const style = document.createElement("style");
+  style.textContent = VIEWER_CSS;
+  document.head.append(style);
+
+  return `<!DOCTYPE html>${document.documentElement.outerHTML}`;
 }

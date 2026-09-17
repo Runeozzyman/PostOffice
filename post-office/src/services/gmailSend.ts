@@ -9,10 +9,11 @@ import { mimeFromFilename } from "../helpers/mimeFromFilename";
 import { parseGmailMessage } from "./gmailPayload";
 import { splitQuotedBody } from "../helpers/splitQuotedBody";
 import { formatSignatureHtml } from "../helpers/signatureHtml";
+import { extractInlineDataImages } from "../helpers/emailInline";
+import { sanitizeEmailHtml } from "../helpers/emailHtmlNode";
 import {
   htmlToPlain,
   looksLikeHtml,
-  sanitizeComposeHtml,
 } from "../helpers/composeHtml";
 import type { ComposeAttachment } from "../types/compose";
 
@@ -127,14 +128,14 @@ function withSignatureParts(input: SendEmailInput) {
 
   if (htmlMode) {
     const htmlSignature = signatureHtml
-      ? formatSignatureHtml(signatureHtml)
+      ? sanitizeEmailHtml(formatSignatureHtml(signatureHtml))
       : signatureText
         ? `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${textToHtml(signatureText)}</div>`
         : "";
     const html = [
-      sanitizeComposeHtml(before.trim()),
+      sanitizeEmailHtml(before.trim()),
       htmlSignature,
-      after.trim() ? sanitizeComposeHtml(after.trim()) : "",
+      after.trim() ? sanitizeEmailHtml(after.trim()) : "",
     ]
       .filter(Boolean)
       .join("<br><br>");
@@ -160,7 +161,7 @@ function withSignatureParts(input: SendEmailInput) {
   }
 
   const htmlSignature = signatureHtml
-    ? formatSignatureHtml(signatureHtml)
+    ? sanitizeEmailHtml(formatSignatureHtml(signatureHtml))
     : `<div class="gmail_signature" data-smartmail="gmail_signature" style="color:#777777">${textToHtml(signatureText)}</div>`;
   const html = [
     `<div dir="ltr">${textToHtml(before.trimEnd())}</div><div><br></div>`,
@@ -186,12 +187,28 @@ function mimeMultipart(subtype: "alternative" | "mixed", parts: string[]) {
   );
 }
 
+function mimeRelated(root: string, inlineParts: string[]) {
+  const boundary = `=_po_related_${randomBytes(12).toString("hex")}`;
+  const inner = [root, ...inlineParts]
+    .map((part) => `--${boundary}\r\n${part}`)
+    .join("\r\n");
+  return mimeHeadersAndBody(
+    [
+      `Content-Type: multipart/related; type="multipart/alternative"; boundary="${boundary}"`,
+    ],
+    `${inner}\r\n--${boundary}--`
+  );
+}
+
 function buildRawMessage(
   input: SendEmailInput,
   reply?: { inReplyTo: string; references: string }
 ) {
   const attachments = loadAttachments(input.attachments ?? []);
   const { plain, html } = withSignatureParts(input);
+  const { html: htmlWithCids, inlines } = html
+    ? extractInlineDataImages(html)
+    : { html: "", inlines: [] };
   const headers = [
     `To: ${input.to.trim()}`,
     input.cc?.trim() ? `Cc: ${input.cc.trim()}` : null,
@@ -203,18 +220,44 @@ function buildRawMessage(
   ].filter((line): line is string => Boolean(line));
 
   const textPart = mimeHeadersAndBody(
-    ["Content-Type: text/plain; charset=UTF-8"],
-    plain
+    [
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: base64",
+    ],
+    wrapBase64(Buffer.from(plain, "utf8").toString("base64"))
   );
-  const bodyEntity = html
-    ? mimeMultipart("alternative", [
-        textPart,
-        mimeHeadersAndBody(["Content-Type: text/html; charset=UTF-8"], html),
-      ])
+  const htmlPart = htmlWithCids
+    ? mimeHeadersAndBody(
+        [
+          "Content-Type: text/html; charset=UTF-8",
+          "Content-Transfer-Encoding: base64",
+        ],
+        wrapBase64(Buffer.from(htmlWithCids, "utf8").toString("base64"))
+      )
+    : "";
+  const alternative = htmlPart
+    ? mimeMultipart("alternative", [textPart, htmlPart])
     : textPart;
 
+  const inlineParts = inlines.map((image) =>
+    mimeHeadersAndBody(
+      [
+        `Content-Type: ${image.mimeType}; name="${image.filename}"`,
+        "Content-Transfer-Encoding: base64",
+        `Content-ID: <${image.cid}>`,
+        `Content-Disposition: inline; ${filenameParam(image.filename)}`,
+      ],
+      wrapBase64(image.data.toString("base64"))
+    )
+  );
+
+  const related =
+    inlineParts.length > 0
+      ? mimeRelated(alternative, inlineParts)
+      : alternative;
+
   if (attachments.length === 0) {
-    return Buffer.from(`${headers.join("\r\n")}\r\n${bodyEntity}\r\n`, "utf8");
+    return Buffer.from(`${headers.join("\r\n")}\r\n${related}\r\n`, "utf8");
   }
 
   const attachmentParts = attachments.map((attachment) =>
@@ -228,7 +271,7 @@ function buildRawMessage(
     )
   );
 
-  const mixed = mimeMultipart("mixed", [bodyEntity, ...attachmentParts]);
+  const mixed = mimeMultipart("mixed", [related, ...attachmentParts]);
   return Buffer.from(`${headers.join("\r\n")}\r\n${mixed}\r\n`, "utf8");
 }
 

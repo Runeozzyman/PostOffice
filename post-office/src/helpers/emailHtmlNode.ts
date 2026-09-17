@@ -1,0 +1,133 @@
+import sanitizeHtml from "sanitize-html";
+
+const EMAIL_TAGS = Array.from(
+  new Set([
+    ...sanitizeHtml.defaults.allowedTags,
+    "html",
+    "head",
+    "body",
+    "style",
+    "img",
+    "font",
+    "center",
+    "hr",
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "td",
+    "th",
+    "caption",
+    "col",
+    "colgroup",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "article",
+    "section",
+    "header",
+    "footer",
+    "main",
+    "figure",
+    "figcaption",
+    "meta",
+    "title",
+    "o:p",
+    "wbr",
+  ])
+);
+
+const ANY_STYLE = [/.+/];
+
+const GLOBAL_ATTRS = [
+  "style",
+  "class",
+  "id",
+  "title",
+  "dir",
+  "lang",
+  "role",
+  "align",
+  "valign",
+  "width",
+  "height",
+  "bgcolor",
+  "background",
+  "color",
+  "border",
+  "cellpadding",
+  "cellspacing",
+  "colspan",
+  "rowspan",
+  "nowrap",
+  "face",
+  "size",
+  "hspace",
+  "vspace",
+];
+
+export function sanitizeEmailHtml(html: string) {
+  if (!html) {
+    return "";
+  }
+
+  return sanitizeHtml(html, {
+    allowedTags: EMAIL_TAGS,
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      "*": GLOBAL_ATTRS,
+      a: ["href", "name", "target", "rel", "title", "style", "class", "id"],
+      img: [
+        "src",
+        "alt",
+        "title",
+        "width",
+        "height",
+        "border",
+        "align",
+        "style",
+        "class",
+        "id",
+      ],
+      font: ["face", "size", "color", "style", "class"],
+      table: [...GLOBAL_ATTRS, "summary"],
+      td: GLOBAL_ATTRS,
+      th: GLOBAL_ATTRS,
+      span: GLOBAL_ATTRS,
+      div: GLOBAL_ATTRS,
+      p: GLOBAL_ATTRS,
+      meta: ["charset", "content", "http-equiv", "name"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "cid", "data"],
+    allowedSchemesByTag: {
+      img: ["http", "https", "cid", "data"],
+      a: ["http", "https", "mailto", "cid"],
+    },
+    allowedStyles: {
+      "*": {
+        color: ANY_STYLE,
+        "background-color": ANY_STYLE,
+        background: ANY_STYLE,
+        "font-size": ANY_STYLE,
+        "font-family": ANY_STYLE,
+        "font-weight": ANY_STYLE,
+        "font-style": ANY_STYLE,
+        "text-align": ANY_STYLE,
+        "text-decoration": ANY_STYLE,
+        "line-height": ANY_STYLE,
+        width: ANY_STYLE,
+        height: ANY_STYLE,
+        "max-width": ANY_STYLE,
+        margin: ANY_STYLE,
+        padding: ANY_STYLE,
+        border: ANY_STYLE,
+        "border-left": ANY_STYLE,
+        display: ANY_STYLE,
+      },
+    },
+  });
+}

@@ -18,6 +18,10 @@ function decodeBase64Url(data: string): Buffer {
   return Buffer.from(padded, "base64");
 }
 
+function normalizeContentId(value: string) {
+  return value.replace(/[<>]/g, "").trim();
+}
+
 function walkParts(
   part: gmail_v1.Schema$MessagePart | undefined,
   collected: {
@@ -33,16 +37,29 @@ function walkParts(
   const mimeType = part.mimeType ?? "";
   const filename = part.filename ?? "";
   const body = part.body;
+  const headers = part.headers ?? [];
+  const contentId = normalizeContentId(getHeader(headers, "Content-ID"));
+  const disposition = getHeader(headers, "Content-Disposition").toLowerCase();
+  const isBodyText = mimeType === "text/plain" || mimeType === "text/html";
+  const inlineImage =
+    Boolean(contentId) &&
+    (mimeType.startsWith("image/") || disposition.includes("inline"));
+  const filePart = Boolean(filename) && !isBodyText;
 
-  if (filename) {
+  if (filePart || inlineImage) {
     const id = body?.attachmentId ?? `inline-${collected.attachments.length}`;
     const data = body?.data ? decodeBase64Url(body.data) : null;
+    const isInline =
+      disposition.includes("inline") ||
+      (Boolean(contentId) && mimeType.startsWith("image/"));
 
     collected.attachments.push({
       id,
-      filename,
+      filename: filename || (contentId ? `${contentId}` : "attachment"),
       mimeType: mimeType || "application/octet-stream",
       size: body?.size ?? data?.length ?? 0,
+      contentId: contentId || undefined,
+      inline: isInline,
       data,
     });
   } else if (mimeType === "text/plain" && body?.data) {
@@ -73,6 +90,8 @@ export function parseGmailMessage(
     filename: attachment.filename,
     mimeType: attachment.mimeType,
     size: attachment.size,
+    contentId: attachment.contentId,
+    inline: attachment.inline,
   }));
 
   return {

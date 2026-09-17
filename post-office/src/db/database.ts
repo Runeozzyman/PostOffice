@@ -80,6 +80,20 @@ function migrate(database: DatabaseSync) {
     )
   `);
 
+  const attachmentColumns = tableColumns(database, "attachments");
+
+  if (!attachmentColumns.has("content_id")) {
+    database.exec(
+      `ALTER TABLE attachments ADD COLUMN content_id TEXT NOT NULL DEFAULT ''`
+    );
+  }
+
+  if (!attachmentColumns.has("is_inline")) {
+    database.exec(
+      `ALTER TABLE attachments ADD COLUMN is_inline INTEGER NOT NULL DEFAULT 0`
+    );
+  }
+
   database.exec(`
     CREATE TABLE IF NOT EXISTS mailslots (
       id TEXT PRIMARY KEY,

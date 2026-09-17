@@ -30,11 +30,9 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
       }`}
     >
       <div className="flex h-16 items-center gap-2 border-b border-line px-3">
-        <div className="min-w-0 flex-1 overflow-hidden">
-          <h1 className="sidebar-label text-lg font-semibold text-ink">
-            PostOffice
-          </h1>
-        </div>
+        <h1 className="sidebar-label text-lg font-semibold text-ink">
+          <span className="sidebar-label-text">PostOffice</span>
+        </h1>
 
         <button
           type="button"
@@ -62,7 +60,7 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex flex-1 flex-col items-start gap-1 p-3">
         <SidebarItem
           icon={<FiMail size={18} />}
           label="Mailslots"
@@ -114,11 +112,12 @@ const Sidebar = ({ setCurrentPage }: SidebarProps) => {
         />
       </nav>
 
-      <div className="flex h-16 shrink-0 items-center border-t border-line px-3">
+      <div className="flex h-10 shrink-0 items-center border-t border-line px-3">
         <SidebarItem
           icon={<FiSettings size={18} />}
           label="Settings"
           collapsed={collapsed}
+          compact
           onClick={() => {
             setCurrentPage("settings");
           }}
@@ -132,6 +131,7 @@ interface SidebarItemProps {
   icon: ReactNode;
   label: string;
   collapsed: boolean;
+  compact?: boolean;
   onClick?: () => void;
 }
 
@@ -139,6 +139,7 @@ const SidebarItem = ({
   icon,
   label,
   collapsed,
+  compact = false,
   onClick,
 }: SidebarItemProps) => {
   return (
@@ -146,10 +147,16 @@ const SidebarItem = ({
       type="button"
       title={collapsed ? label : undefined}
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-ink-secondary hover:cursor-pointer hover:bg-hover hover:text-ink"
+      className={`inline-flex items-center gap-3 rounded-md px-3 text-sm leading-none text-ink-secondary hover:cursor-pointer hover:bg-hover hover:text-ink ${
+        compact ? "h-full py-0" : "py-2"
+      }`}
     >
-      <span className="shrink-0">{icon}</span>
-      <span className="sidebar-label truncate">{label}</span>
+      <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center [&>svg]:block">
+        {icon}
+      </span>
+      <span className="sidebar-label">
+        <span className="sidebar-label-text">{label}</span>
+      </span>
     </button>
   );
 };
