@@ -24,9 +24,8 @@ export default function MailslotCard({
       }}
       className="mailslot-pop mailslot-stage relative h-full min-h-0 min-w-0"
     >
-      <div className="mailslot-cavity" aria-hidden="true" />
       <div
-        className="mailslot-door relative flex h-full min-h-0 min-w-0 flex-col rounded-2xl p-3 text-left text-white shadow-sm"
+        className="mailslot-face relative flex h-full min-h-0 min-w-0 flex-col rounded-2xl p-3 text-left text-white"
         style={{ backgroundColor: mailslot.color }}
       >
         <button
